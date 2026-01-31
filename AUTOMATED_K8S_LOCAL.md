@@ -1,7 +1,8 @@
 # Objective
+
+
 Create a fully automated local Kubernetes cluster using:
-- Multipass as the VM provider
-- Terraform for infrastructure provisioning
+- Multipass as the VM provider (manual or shell script)
 - Ansible for configuration management
 - kubeadm for Kubernetes bootstrap
 
@@ -34,10 +35,12 @@ The setup must be reproducible, idempotent, and CLI-driven.
 
 ---
 
-## Step 1: Terraform — VM Provisioning
+
+
+## Step 1: Multipass VM Provisioning (Manual)
 
 ### Responsibilities
-Terraform must:
+You must:
 - Create three Multipass VMs:
   - k8s-master
   - k8s-worker1
@@ -49,15 +52,19 @@ Terraform must:
   - SSH usernames
   - Node roles
 
-Terraform must NOT:
+Do NOT:
 - Install Kubernetes
 - Install container runtime
 - Configure the OS
 
-### Expected Files
-- main.tf
-- variables.tf
-- outputs.tf
+### Example Commands
+You can use the following commands manually or in a shell script:
+```sh
+multipass launch --name k8s-master --cpus=2 --mem=2G --disk=20G ubuntu-lts
+multipass launch --name k8s-worker1 --cpus=2 --mem=2G --disk=20G ubuntu-lts
+multipass launch --name k8s-worker2 --cpus=2 --mem=2G --disk=20G ubuntu-lts
+multipass list
+```
 
 ---
 
