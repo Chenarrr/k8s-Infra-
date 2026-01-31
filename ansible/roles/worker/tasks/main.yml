@@ -1,0 +1,18 @@
+---
+- name: Fetch join command from master
+  ansible.builtin.slurp:
+    src: /tmp/kubeadm_join_cmd.sh
+  register: join_script
+  delegate_to: k8s-master
+  run_once: true
+
+- name: Write join command to file
+  ansible.builtin.copy:
+    dest: /tmp/kubeadm_join_cmd.sh
+    content: "{{ join_script['content'] | b64decode }}"
+    mode: '0700'
+
+- name: Join the Kubernetes cluster
+  ansible.builtin.command: bash /tmp/kubeadm_join_cmd.sh
+  args:
+    creates: /etc/kubernetes/kubelet.conf
