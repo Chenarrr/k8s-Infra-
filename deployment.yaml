@@ -4,7 +4,6 @@ metadata:
   name: frontend
   labels:
     app: frontend
-    tier: frontend
 spec:
   replicas: 3
   selector:
@@ -14,30 +13,9 @@ spec:
     metadata:
       labels:
         app: frontend
-        tier: frontend
     spec:
       containers:
       - name: frontend
         image: chenarrr/devops:frontend
         ports:
-        - containerPort: 80
-          name: http
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - containerPort: 5000

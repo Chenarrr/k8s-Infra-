@@ -10,8 +10,7 @@ spec:
     app: frontend
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
+    port: 5000
+    targetPort: 5000
     nodePort: 30080
     name: http
-    
