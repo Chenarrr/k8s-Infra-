@@ -1,13 +1,16 @@
-Kubernetes Cluster Setup Guide
-Prerequisites
+# Kubernetes Cluster Setup Guide
 
-Multipass installed
-kubectl installed
-Docker Hub account with your images
+## Prerequisites
+- Multipass installed
+- kubectl installed
+- Docker Hub account with your images
 
+---
 
-Part 1: Clean Up (If needed)
-bash# Delete existing deployments
+## Part 1: Clean Up (If needed)
+
+```bash
+# Delete existing deployments
 kubectl delete deployment --all
 kubectl delete svc --all
 
@@ -17,9 +20,14 @@ multipass purge
 
 # Verify clean state
 multipass list
+```
 
-Part 2: Create VMs
-bash# Create 3 VMs
+---
+
+## Part 2: Create VMs
+
+```bash
+# Create 3 VMs
 multipass launch --name k8s-master --cpus 2 --memory 2G --disk 20G 22.04
 multipass launch --name k8s-worker1 --cpus 2 --memory 2G --disk 20G 22.04
 multipass launch --name k8s-worker2 --cpus 2 --memory 2G --disk 20G 22.04
@@ -27,9 +35,14 @@ multipass launch --name k8s-worker2 --cpus 2 --memory 2G --disk 20G 22.04
 # Check VMs are running
 multipass list
 # Note down the IP addresses
+```
 
-Part 3: Setup Master Node
-bash# Disable swap
+---
+
+## Part 3: Setup Master Node
+
+```bash
+# Disable swap
 multipass exec k8s-master -- sudo swapoff -a
 multipass exec k8s-master -- sudo sed -i '/ swap / s/^/#/' /etc/fstab
 
@@ -74,9 +87,14 @@ multipass exec k8s-master -- bash -c "echo 'deb [signed-by=/etc/apt/keyrings/kub
 multipass exec k8s-master -- sudo apt-get update
 multipass exec k8s-master -- sudo apt-get install -y kubelet kubeadm kubectl
 multipass exec k8s-master -- sudo apt-mark hold kubelet kubeadm kubectl
+```
 
-Part 4: Initialize Master
-bash# Replace MASTER_IP with your actual master IP from multipass list
+---
+
+## Part 4: Initialize Master
+
+```bash
+# Replace MASTER_IP with your actual master IP from multipass list
 multipass exec k8s-master -- sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=MASTER_IP
 
 # Setup kubeconfig
@@ -89,10 +107,16 @@ multipass exec k8s-master -- kubectl apply -f https://github.com/flannel-io/flan
 
 # Get join command - SAVE THIS OUTPUT!
 multipass exec k8s-master -- sudo kubeadm token create --print-join-command
+```
 
-Part 5: Setup Worker Nodes
-Worker 1
-bash# Disable swap
+---
+
+## Part 5: Setup Worker Nodes
+
+### Worker 1
+
+```bash
+# Disable swap
 multipass exec k8s-worker1 -- sudo swapoff -a
 multipass exec k8s-worker1 -- sudo sed -i '/ swap / s/^/#/' /etc/fstab
 
@@ -140,8 +164,12 @@ multipass exec k8s-worker1 -- sudo apt-mark hold kubelet kubeadm kubectl
 
 # Join cluster - PASTE YOUR JOIN COMMAND FROM PART 4
 multipass exec k8s-worker1 -- sudo kubeadm join MASTER_IP:6443 --token TOKEN --discovery-token-ca-cert-hash sha256:HASH
-Worker 2
-bash# Disable swap
+```
+
+### Worker 2
+
+```bash
+# Disable swap
 multipass exec k8s-worker2 -- sudo swapoff -a
 multipass exec k8s-worker2 -- sudo sed -i '/ swap / s/^/#/' /etc/fstab
 
@@ -189,9 +217,14 @@ multipass exec k8s-worker2 -- sudo apt-mark hold kubelet kubeadm kubectl
 
 # Join cluster - PASTE YOUR JOIN COMMAND FROM PART 4
 multipass exec k8s-worker2 -- sudo kubeadm join MASTER_IP:6443 --token TOKEN --discovery-token-ca-cert-hash sha256:HASH
+```
 
-Part 6: Setup kubectl on Your Mac
-bash# Create .kube directory
+---
+
+## Part 6: Setup kubectl on Your Mac
+
+```bash
+# Create .kube directory
 mkdir -p ~/.kube
 
 # Copy kubeconfig from master
@@ -205,10 +238,16 @@ kubectl get nodes
 
 # Wait until all nodes show Ready status
 kubectl get nodes -w
+```
 
-Part 7: Deploy Your Application
-Create deployment.yaml
-yamlapiVersion: apps/v1
+---
+
+## Part 7: Deploy Your Application
+
+### Create deployment.yaml
+
+```yaml
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
@@ -322,8 +361,12 @@ spec:
   - protocol: TCP
     port: 27017
     targetPort: 27017
-Deploy
-bash# Apply the deployment
+```
+
+### Deploy
+
+```bash
+# Apply the deployment
 kubectl apply -f deployment.yaml
 
 # Check pods
@@ -339,9 +382,14 @@ kubectl get pods -w
 kubectl logs -l app=backend
 kubectl logs -l app=frontend
 kubectl logs -l app=mongodb
+```
 
-Part 8: Access Your Application
-bash# Get the NodePort
+---
+
+## Part 8: Access Your Application
+
+```bash
+# Get the NodePort
 kubectl get svc frontend-service
 
 # Access via any node IP on port 30080
@@ -351,25 +399,45 @@ kubectl get svc frontend-service
 
 # Test from command line
 curl http://MASTER_IP:30080
+```
 
-Troubleshooting
-Check node status
-bashkubectl get nodes
+---
+
+## Troubleshooting
+
+### Check node status
+```bash
+kubectl get nodes
 kubectl describe node NODE_NAME
-Check pod status
-bashkubectl get pods -o wide
+```
+
+### Check pod status
+```bash
+kubectl get pods -o wide
 kubectl describe pod POD_NAME
 kubectl logs POD_NAME
-Check services
-bashkubectl get svc
+```
+
+### Check services
+```bash
+kubectl get svc
 kubectl describe svc SERVICE_NAME
-Restart a deployment
-bashkubectl rollout restart deployment DEPLOYMENT_NAME
-Delete and recreate
-bashkubectl delete -f deployment.yaml
+```
+
+### Restart a deployment
+```bash
+kubectl rollout restart deployment DEPLOYMENT_NAME
+```
+
+### Delete and recreate
+```bash
+kubectl delete -f deployment.yaml
 kubectl apply -f deployment.yaml
-Reset a worker node
-bashmultipass exec WORKER_NAME -- sudo kubeadm reset -f
+```
+
+### Reset a worker node
+```bash
+multipass exec WORKER_NAME -- sudo kubeadm reset -f
 multipass exec WORKER_NAME -- sudo rm -rf /etc/cni/net.d
 multipass exec WORKER_NAME -- sudo systemctl restart containerd
 
@@ -378,28 +446,39 @@ multipass exec k8s-master -- sudo kubeadm token create --print-join-command
 
 # Rejoin
 multipass exec WORKER_NAME -- sudo kubeadm join ...
+```
 
-Cleanup
-bash# Delete all deployments
+---
+
+## Cleanup
+
+```bash
+# Delete all deployments
 kubectl delete -f deployment.yaml
 
 # Delete VMs
 multipass delete k8s-master k8s-worker1 k8s-worker2
 multipass purge
+```
 
-Notes
+---
 
-Replace YOUR_DOCKERHUB with your Docker Hub username
-Replace MASTER_IP, WORKER1_IP, WORKER2_IP with actual IPs from multipass list
-Replace TOKEN and HASH with actual values from the join command
-All commands are run from your Mac terminal, not inside VMs
-Use multipass exec to run commands on VMs
-Wait for pods to be Running before accessing the application
-NodePort range is 30000-32767
+## Notes
 
+- Replace `YOUR_DOCKERHUB` with your Docker Hub username
+- Replace `MASTER_IP`, `WORKER1_IP`, `WORKER2_IP` with actual IPs from `multipass list`
+- Replace `TOKEN` and `HASH` with actual values from the join command
+- All commands are run from your Mac terminal, not inside VMs
+- Use `multipass exec` to run commands on VMs
+- Wait for pods to be Running before accessing the application
+- NodePort range is 30000-32767
 
-Quick Reference
-bash# Check everything
+---
+
+## Quick Reference
+
+```bash
+# Check everything
 kubectl get all -o wide
 
 # Get node IPs
@@ -416,3 +495,4 @@ kubectl delete pod POD_NAME
 
 # Shell into pod
 kubectl exec -it POD_NAME -- /bin/sh
+```
