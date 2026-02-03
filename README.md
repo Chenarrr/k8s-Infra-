@@ -8,7 +8,8 @@
 | `frontend-service.yaml` | LoadBalancer service exposing frontend externally |
 | `backend-deployment.yaml` | Backend Deployment (1 replica, port 5000) |
 | `backend-service.yaml` | ClusterIP service for internal backend access |
-| `mongodb-deployment.yaml` | MongoDB StatefulSet + PersistentVolume (1Gi) |
+| `mongodb-storage.yaml` | PersistentVolume + PersistentVolumeClaim (5Gi) |
+| `mongodb-statefulset.yaml` | MongoDB StatefulSet (1 replica) |
 | `mongodb-service.yaml` | Headless service for MongoDB |
 
 ## Cluster Setup

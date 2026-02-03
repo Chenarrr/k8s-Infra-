@@ -5,12 +5,10 @@ metadata:
   labels:
     app: mongodb
 spec:
-  type: ClusterIP
-  clusterIP: None  # Headless service for StatefulSet
+  clusterIP: None
   selector:
     app: mongodb
   ports:
   - port: 27017
     targetPort: 27017
     name: mongodb
-    
