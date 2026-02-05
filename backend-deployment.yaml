@@ -17,6 +17,7 @@ spec:
       containers:
       - name: backend
         image: chenarrr/devops:backend
+        imagePullPolicy: Always
         ports:
         - containerPort: 5000
         env:
