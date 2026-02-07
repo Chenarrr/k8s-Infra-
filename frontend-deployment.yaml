@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: chenarrr/devops:frontend-ac3bbf194e3e51811efb5aad975361b79aa59687
+          image: chenarrr/devops:frontend-14c1bde
           imagePullPolicy: Always
           ports:
             - containerPort: 80
