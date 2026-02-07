@@ -2,31 +2,59 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
+  namespace: notes-app
   labels:
-    app: backend
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: notes-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app.kubernetes.io/name: backend
   template:
     metadata:
       labels:
-        app: backend
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: notes-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
-      - name: backend
-        image: chenarrr/devops:backend
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 5000
-        env:
-        - name: MONGODB_URI
-          value: "mongodb://mongodb-service:27017/notes-app"
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
+        - name: backend
+          image: chenarrr/devops:backend
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGODB_URI
+              value: "mongodb://mongodb-service:27017/notes-app"
+            - name: NODE_ENV
+              value: "production"
+          readinessProbe:
+            httpGet:
+              path: /api/notes
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/notes
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
