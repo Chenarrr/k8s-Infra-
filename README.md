@@ -1,6 +1,6 @@
 # Kubernetes Full-Stack Application Deployment
 
-A complete guide to building a production-like 3-node Kubernetes cluster with a full-stack application.
+A clear guide to running the app across **two VMs**, each hosting its **own small Kubernetes cluster**.
 
 ---
 
@@ -22,10 +22,12 @@ A complete guide to building a production-like 3-node Kubernetes cluster with a 
 ## Project Overview
 
 **What Was Built:**
-- 3-node Kubernetes cluster (1 master, 2 workers)
-- Full-stack application: MongoDB + Node.js Backend + React Frontend
+- **Two separate Kubernetes clusters** (one per VM)
+- **Each cluster has 2 nodes** (1 control plane + 1 worker)
+- **DB cluster** runs MongoDB only
+- **App cluster** runs Backend + Frontend + Ingress
 - Persistent storage for database
-- Multi-tier networking with service discovery
+- Cross-cluster connectivity from app → DB
 
 **Technology Stack:**
 - Virtualization: Multipass (nested VMs)
@@ -40,22 +42,28 @@ A complete guide to building a production-like 3-node Kubernetes cluster with a 
 ## Architecture
 
 ```
-Main VM (142.93.28.130) - Ubuntu 22.04, 4 CPUs, 8GB RAM, 120GB Disk
+App VM (159.65.118.205)
 └── Multipass
-    ├── k8s-master (10.69.234.135) - Control Plane - 2 CPUs, 2.5GB RAM
-    ├── k8s-worker1 (10.69.234.74) - Worker Node - 1 CPU, 2GB RAM
-    └── k8s-worker2 (10.69.234.29) - Worker Node - 1 CPU, 2GB RAM
+      ├── app-master  - Control Plane
+      └── app-worker  - Worker Node
+
+DB VM (142.93.28.130)
+└── Multipass
+      ├── db-master   - Control Plane
+      └── db-worker   - Worker Node
 ```
 
 **Network Flow:**
 ```
-Browser → SSH Tunnel/NodePort → Frontend (port 80)
-                                    ↓
-                              Backend Service (port 5000)
-                                    ↓
-                              MongoDB Service (port 27017)
-                                    ↓
-                              PersistentVolume (/mnt/data/mongodb)
+Browser → Ingress (App Cluster)
+                 ↓
+           Frontend (App Cluster)
+                 ↓
+           Backend (App Cluster)
+                 ↓
+     MongoDB NodePort (DB Cluster)
+                 ↓
+      PersistentVolume (/mnt/data/mongodb)
 ```
 
 ---
@@ -63,7 +71,7 @@ Browser → SSH Tunnel/NodePort → Frontend (port 80)
 ## Prerequisites
 
 **Hardware:**
-- Main VM: 4+ CPUs, 8GB+ RAM, 60GB+ disk
+- Two VMs: each 2+ CPUs, 4GB+ RAM, 40GB+ disk
 
 **Software:**
 - Docker Desktop (for building images)
@@ -74,16 +82,19 @@ Browser → SSH Tunnel/NodePort → Frontend (port 80)
 
 ## Installation
 
-### Phase 1: VM Setup
+### Phase 1: VM Setup (Two VMs)
 
 ```bash
 # Install Multipass
 sudo snap install multipass
 
-# Create VMs
-multipass launch --name k8s-master --cpus 2 --memory 2.5G --disk 20G 22.04
-multipass launch --name k8s-worker1 --cpus 1 --memory 2G --disk 15G 22.04
-multipass launch --name k8s-worker2 --cpus 1 --memory 2G --disk 15G 22.04
+# Create VMs on the **App VM**
+multipass launch --name app-master --cpus 2 --memory 2.5G --disk 20G 22.04
+multipass launch --name app-worker --cpus 1 --memory 2G --disk 15G 22.04
+
+# Create VMs on the **DB VM**
+multipass launch --name db-master --cpus 2 --memory 2.5G --disk 20G 22.04
+multipass launch --name db-worker --cpus 1 --memory 2G --disk 15G 22.04
 
 # Verify
 multipass list
