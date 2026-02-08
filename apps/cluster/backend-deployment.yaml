@@ -31,7 +31,7 @@ spec:
             - containerPort: 5000
           env:
             - name: MONGODB_URI
-              value: "mongodb://142.93.28.130:32017/notes-app"
+              value: "mongodb://mongodb-service:27017/notes-app"
             - name: NODE_ENV
               value: "production"
           readinessProbe:

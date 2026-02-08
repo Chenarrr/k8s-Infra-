@@ -1,6 +1,6 @@
 # Kubernetes Full-Stack Application Deployment
 
-A clear guide to running the app across **two VMs**, each hosting its **own small Kubernetes cluster**.
+A clear guide to running **one Kubernetes cluster** across **two VMs**.
 
 ---
 
@@ -22,12 +22,12 @@ A clear guide to running the app across **two VMs**, each hosting its **own smal
 ## Project Overview
 
 **What Was Built:**
-- **Two separate Kubernetes clusters** (one per VM)
-- **Each cluster has 2 nodes** (1 control plane + 1 worker)
-- **DB cluster** runs MongoDB only
-- **App cluster** runs Backend + Frontend + Ingress
+- **One Kubernetes cluster** spread across two VMs
+- **1 control-plane + 2 workers**
+      - VM1: control-plane + worker
+      - VM2: worker
+- Full-stack app: MongoDB + Backend + Frontend + Ingress
 - Persistent storage for database
-- Cross-cluster connectivity from app → DB
 
 **Technology Stack:**
 - Virtualization: Multipass (nested VMs)
@@ -42,28 +42,27 @@ A clear guide to running the app across **two VMs**, each hosting its **own smal
 ## Architecture
 
 ```
-App VM (159.65.118.205)
+VM1 (<VM1_PUBLIC_IP>)
 └── Multipass
-      ├── app-master  - Control Plane
-      └── app-worker  - Worker Node
+      ├── cp-1     - Control Plane
+      └── worker-1 - Worker Node
 
-DB VM (142.93.28.130)
+VM2 (<VM2_PUBLIC_IP>)
 └── Multipass
-      ├── db-master   - Control Plane
-      └── db-worker   - Worker Node
+      └── worker-2 - Worker Node
 ```
 
 **Network Flow:**
 ```
-Browser → Ingress (App Cluster)
-                 ↓
-           Frontend (App Cluster)
-                 ↓
-           Backend (App Cluster)
-                 ↓
-     MongoDB NodePort (DB Cluster)
-                 ↓
-      PersistentVolume (/mnt/data/mongodb)
+Browser → Ingress
+         ↓
+      Frontend
+         ↓
+      Backend
+         ↓
+ MongoDB Service
+         ↓
+ PersistentVolume (/mnt/data/mongodb)
 ```
 
 ---
@@ -71,12 +70,22 @@ Browser → Ingress (App Cluster)
 ## Prerequisites
 
 **Hardware:**
-- Two VMs: each 2+ CPUs, 4GB+ RAM, 40GB+ disk
+- VM1: 2+ CPUs, 4GB+ RAM, 40GB+ disk
+- VM2: 2+ CPUs, 4GB+ RAM, 40GB+ disk
 
 **Software:**
 - Docker Desktop (for building images)
 - SSH client
 - Terminal access
+
+**Network (required between VM1 and VM2):**
+- 6443/tcp (Kubernetes API)
+- 2379-2380/tcp (etcd)
+- 10250/tcp (kubelet)
+- 10257/tcp (kube-controller-manager)
+- 10259/tcp (kube-scheduler)
+- 8472/udp (Flannel VXLAN)
+- 30000-32767/tcp (NodePort, if you use it)
 
 ---
 
@@ -88,13 +97,12 @@ Browser → Ingress (App Cluster)
 # Install Multipass
 sudo snap install multipass
 
-# Create VMs on the **App VM**
-multipass launch --name app-master --cpus 2 --memory 2.5G --disk 20G 22.04
-multipass launch --name app-worker --cpus 1 --memory 2G --disk 15G 22.04
+# Create VMs on **VM1** (control-plane + worker)
+multipass launch --name cp-1 --cpus 2 --memory 2.5G --disk 20G 22.04
+multipass launch --name worker-1 --cpus 1 --memory 2G --disk 15G 22.04
 
-# Create VMs on the **DB VM**
-multipass launch --name db-master --cpus 2 --memory 2.5G --disk 20G 22.04
-multipass launch --name db-worker --cpus 1 --memory 2G --disk 15G 22.04
+# Create VMs on **VM2** (worker only)
+multipass launch --name worker-2 --cpus 1 --memory 2G --disk 15G 22.04
 
 # Verify
 multipass list
@@ -157,29 +165,29 @@ chmod +x install-k8s.sh
 **Run on all nodes:**
 
 ```bash
-# Master
-multipass transfer install-k8s.sh k8s-master:/home/ubuntu/
-multipass exec k8s-master -- bash /home/ubuntu/install-k8s.sh
+# Control-plane
+multipass transfer install-k8s.sh cp-1:/home/ubuntu/
+multipass exec cp-1 -- bash /home/ubuntu/install-k8s.sh
 
 # Workers
-multipass transfer install-k8s.sh k8s-worker1:/home/ubuntu/
-multipass exec k8s-worker1 -- bash /home/ubuntu/install-k8s.sh
+multipass transfer install-k8s.sh worker-1:/home/ubuntu/
+multipass exec worker-1 -- bash /home/ubuntu/install-k8s.sh
 
-multipass transfer install-k8s.sh k8s-worker2:/home/ubuntu/
-multipass exec k8s-worker2 -- bash /home/ubuntu/install-k8s.sh
+multipass transfer install-k8s.sh worker-2:/home/ubuntu/
+multipass exec worker-2 -- bash /home/ubuntu/install-k8s.sh
 ```
 
 ---
 
 ### Phase 3: Cluster Setup
 
-**Initialize master:**
+**Initialize control-plane:**
 
 ```bash
-multipass shell k8s-master
+multipass shell cp-1
 
-# Initialize (use master's IP)
-sudo kubeadm init --apiserver-advertise-address=10.69.234.135 --pod-network-cidr=10.244.0.0/16
+# Initialize (use control-plane IP)
+sudo kubeadm init --apiserver-advertise-address=<CP1_PRIVATE_IP> --pod-network-cidr=10.244.0.0/16
 
 # Configure kubectl
 mkdir -p $HOME/.kube
@@ -199,19 +207,19 @@ kubectl get nodes
 # Exit master, then join each worker with the command from kubeadm init output
 exit
 
-multipass shell k8s-worker1
-sudo kubeadm join 10.69.234.135:6443 --token YOUR_TOKEN --discovery-token-ca-cert-hash sha256:YOUR_HASH
+multipass shell worker-1
+sudo kubeadm join <CP1_PRIVATE_IP>:6443 --token YOUR_TOKEN --discovery-token-ca-cert-hash sha256:YOUR_HASH
 exit
 
-multipass shell k8s-worker2
-sudo kubeadm join 10.69.234.135:6443 --token YOUR_TOKEN --discovery-token-ca-cert-hash sha256:YOUR_HASH
+multipass shell worker-2
+sudo kubeadm join <CP1_PRIVATE_IP>:6443 --token YOUR_TOKEN --discovery-token-ca-cert-hash sha256:YOUR_HASH
 exit
 ```
 
 **Verify cluster:**
 
 ```bash
-multipass shell k8s-master
+multipass shell cp-1
 kubectl get nodes
 # All nodes should show "Ready"
 ```
@@ -224,13 +232,13 @@ kubectl get nodes
 - Type: StatefulSet
 - Storage: 5Gi PersistentVolume (hostPath)
 - Port: 27017
-- Service: Headless (ClusterIP: None) + optional NodePort for cross-cluster access
+- Service: Headless (ClusterIP: None)
 
 ### 2. Backend API
 - Type: Deployment
 - Image: chenarrr/devops:backend
 - Port: 5000
-- Environment: MONGODB_URI=mongodb://142.93.28.130:32017/notes-app
+- Environment: MONGODB_URI=mongodb://mongodb-service:27017/notes-app
 - Service: ClusterIP
 
 ### 3. Frontend
@@ -243,41 +251,25 @@ kubectl get nodes
 
 ## Repo Layout (GitOps-friendly)
 
-I split the manifests so each cluster can sync only what it needs:
+All manifests live in one folder and are applied to the **single cluster**:
 
-- apps/mongodb → MongoDB + storage + NodePort service
-- apps/app → Frontend + Backend + Ingress
+- apps/cluster → MongoDB + Backend + Frontend + Ingress
 
-There are two ArgoCD Applications:
-- argocd-application.yaml → app cluster (frontend/backend/ingress)
-- argocd-application-db.yaml → MongoDB cluster
+ArgoCD uses a single application:
+- argocd-application.yaml → apps/cluster
 
-If you run ArgoCD in only one cluster, update the `destination.server` field for the other cluster or install a second ArgoCD instance.
+## Deployment (Single Cluster)
 
-## Split Deployment (Two Servers)
-
-Here’s the simple rule:
-- **MongoDB lives on 142.93.28.130**
-- **Frontend/Backend live on 159.65.118.205**
-- **Only one Ingress**, and it belongs to the app cluster
-
-### MongoDB cluster (142.93.28.130)
 ```bash
-kubectl apply -f apps/mongodb/namespace.yaml
-kubectl apply -f apps/mongodb/mongodb-storage.yaml
-kubectl apply -f apps/mongodb/mongodb-statefulset.yaml
-kubectl apply -f apps/mongodb/mongodb-service.yaml
-kubectl apply -f apps/mongodb/mongodb-nodeport.yaml
-```
-
-### App cluster (159.65.118.205)
-```bash
-kubectl apply -f apps/app/namespace.yaml
-kubectl apply -f apps/app/backend-deployment.yaml
-kubectl apply -f apps/app/backend-service.yaml
-kubectl apply -f apps/app/frontend-deployment.yaml
-kubectl apply -f apps/app/frontend-service.yaml
-kubectl apply -f apps/app/ingress.yaml
+kubectl apply -f apps/cluster/namespace.yaml
+kubectl apply -f apps/cluster/mongodb-storage.yaml
+kubectl apply -f apps/cluster/mongodb-statefulset.yaml
+kubectl apply -f apps/cluster/mongodb-service.yaml
+kubectl apply -f apps/cluster/backend-deployment.yaml
+kubectl apply -f apps/cluster/backend-service.yaml
+kubectl apply -f apps/cluster/frontend-deployment.yaml
+kubectl apply -f apps/cluster/frontend-service.yaml
+kubectl apply -f apps/cluster/ingress.yaml
 ```
 
 **Verify all:**
@@ -291,19 +283,19 @@ kubectl get all
 
 ### Method 1: Ingress (Recommended)
 
-Make sure the NGINX Ingress Controller is installed on the **app cluster**. Then use the Ingress controller’s external IP (or the node IP if you’re using NodePort).
+Make sure the NGINX Ingress Controller is installed in the cluster. Then use the Ingress controller’s external IP (or the node IP if you’re using NodePort).
 
-If you use a NodePort for the Ingress controller, open the firewall and browse to:
+If you use NodePort for the Ingress controller, open the firewall on VM1 and browse to:
 
 ```
-http://159.65.118.205:<INGRESS_NODEPORT>
+http://<VM1_PUBLIC_IP>:<INGRESS_NODEPORT>
 ```
 
 ### Method 2: SSH Tunnel (Quick test)
 
 **From your Mac:**
 ```bash
-ssh -L 8080:159.65.118.205:80 root@159.65.118.205
+ssh -L 8080:<VM1_PUBLIC_IP>:80 root@<VM1_PUBLIC_IP>
 ```
 
 **Then open browser:**
