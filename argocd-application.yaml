@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/Chenarrr/k8s-Infra-.git
     targetRevision: HEAD
-    path: apps/cluster
+    path: .
   destination:
     server: https://kubernetes.default.svc
     namespace: notes-app
