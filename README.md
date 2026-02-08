@@ -213,45 +213,60 @@ kubectl get nodes
 - Type: StatefulSet
 - Storage: 5Gi PersistentVolume (hostPath)
 - Port: 27017
-- Service: Headless (ClusterIP: None)
+- Service: Headless (ClusterIP: None) + optional NodePort for cross-cluster access
 
 ### 2. Backend API
 - Type: Deployment
 - Image: chenarrr/devops:backend
 - Port: 5000
-- Environment: MONGODB_URI=mongodb://mongodb-service:27017/notes-app
+- Environment: MONGODB_URI=mongodb://142.93.28.130:32017/notes-app
 - Service: ClusterIP
 
 ### 3. Frontend
 - Type: Deployment
 - Image: chenarrr/devops:frontend
 - Port: 80
-- Service: LoadBalancer (NodePort: 31009)
-
----`
-
-**Deploy:**
-```bash
-kubectl apply -f mongodb-storage.yaml
-kubectl apply -f mongodb-statefulset.yaml
-kubectl apply -f mongodb-service.yaml
-```
-
----
- 
-
-**Deploy:**
-```bash
-kubectl apply -f backend-deployment.yaml
-kubectl apply -f backend-service.yaml
-```
+- Service: ClusterIP (served through Ingress)
 
 ---
 
-**Deploy:**
+## Repo Layout (GitOps-friendly)
+
+I split the manifests so each cluster can sync only what it needs:
+
+- apps/mongodb → MongoDB + storage + NodePort service
+- apps/app → Frontend + Backend + Ingress
+
+There are two ArgoCD Applications:
+- argocd-application.yaml → app cluster (frontend/backend/ingress)
+- argocd-application-db.yaml → MongoDB cluster
+
+If you run ArgoCD in only one cluster, update the `destination.server` field for the other cluster or install a second ArgoCD instance.
+
+## Split Deployment (Two Servers)
+
+Here’s the simple rule:
+- **MongoDB lives on 142.93.28.130**
+- **Frontend/Backend live on 159.65.118.205**
+- **Only one Ingress**, and it belongs to the app cluster
+
+### MongoDB cluster (142.93.28.130)
 ```bash
-kubectl apply -f frontend-deployment.yaml
-kubectl apply -f frontend-service.yaml
+kubectl apply -f apps/mongodb/namespace.yaml
+kubectl apply -f apps/mongodb/mongodb-storage.yaml
+kubectl apply -f apps/mongodb/mongodb-statefulset.yaml
+kubectl apply -f apps/mongodb/mongodb-service.yaml
+kubectl apply -f apps/mongodb/mongodb-nodeport.yaml
+```
+
+### App cluster (159.65.118.205)
+```bash
+kubectl apply -f apps/app/namespace.yaml
+kubectl apply -f apps/app/backend-deployment.yaml
+kubectl apply -f apps/app/backend-service.yaml
+kubectl apply -f apps/app/frontend-deployment.yaml
+kubectl apply -f apps/app/frontend-service.yaml
+kubectl apply -f apps/app/ingress.yaml
 ```
 
 **Verify all:**
@@ -263,31 +278,27 @@ kubectl get all
 
 ## Access
 
-### Method 1: SSH Tunnel (Recommended)
+### Method 1: Ingress (Recommended)
+
+Make sure the NGINX Ingress Controller is installed on the **app cluster**. Then use the Ingress controller’s external IP (or the node IP if you’re using NodePort).
+
+If you use a NodePort for the Ingress controller, open the firewall and browse to:
+
+```
+http://159.65.118.205:<INGRESS_NODEPORT>
+```
+
+### Method 2: SSH Tunnel (Quick test)
 
 **From your Mac:**
 ```bash
-ssh -L 8080:10.69.234.135:31009 root@142.93.28.130
+ssh -L 8080:159.65.118.205:80 root@159.65.118.205
 ```
 
 **Then open browser:**
 ```
 http://localhost:8080
 ```
-
-### Method 2: Direct NodePort
-
-**Open firewall:**
-```bash
-sudo ufw allow 31009/tcp
-```
-
-**Access from browser:**
-```
-http://142.93.28.130:31009
-```
-
----
 
 ## Commands Reference
 
