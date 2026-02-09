@@ -11,13 +11,12 @@ spec:
     path: .
     directory:
       recurse: true
+      exclude: 'argocd-application.yaml'  
   destination:
     server: https://kubernetes.default.svc
     namespace: notes-app
-  syncPolicy:
     automated:
       prune: true
       selfHeal: true
-
 
       
