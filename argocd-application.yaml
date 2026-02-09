@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: noteapp
+  name: note-app
   namespace: argocd
 spec:
   project: default
@@ -9,9 +9,11 @@ spec:
     repoURL: https://github.com/Chenarrr/k8s-Infra-.git
     targetRevision: HEAD
     path: .
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
-    namespace: noteapp
+    namespace: notes-app
   syncPolicy:
     automated:
       prune: true
