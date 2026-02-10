@@ -16,6 +16,7 @@ A clear guide to running **one Kubernetes cluster** on **one VM** with **two nod
 8. [Commands Reference](#commands-reference)
 9. [Troubleshooting](#troubleshooting)
 10. [Next Steps](#next-steps)
+11. [GitOps (Flux CD)](#gitops-flux-cd)
 
 ---
 
@@ -274,6 +275,24 @@ If you use NodePort for the Ingress controller, open the firewall and browse to:
 http://142.93.28.130:<INGRESS_NODEPORT>
 ```
 
+### Method 1b: Port-Forward the Ingress (From Mac)
+
+If you do not have a public LoadBalancer or NodePort, you can port-forward the
+Ingress controller to your Mac.
+
+```bash
+# Get the ingress controller service name
+kubectl get svc -n ingress-nginx
+
+# Port-forward the controller service to localhost:8080
+kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
+```
+
+Open:
+```
+http://localhost:8080
+```
+
 ### Method 2: SSH Tunnel (Quick test)
 
 **From your Mac:**
@@ -284,6 +303,19 @@ ssh -L 8080:142.93.28.130:80 root@142.93.28.130
 **Then open browser:**
 ```
 http://localhost:8080
+```
+
+### Method 3: Port-Forward the Frontend Service (From Mac)
+
+This bypasses the Ingress and exposes the frontend service directly.
+
+```bash
+kubectl -n default port-forward svc/frontend-service 8081:80
+```
+
+Open:
+```
+http://localhost:8081
 ```
 
 ## Commands Reference
@@ -394,6 +426,54 @@ kubectl autoscale deployment backend --cpu-percent=70 --min=2 --max=10
 - Kubernetes Operators
 - Multi-cluster management
 - Try managed Kubernetes (EKS, GKE, AKS, OKE)
+
+---
+
+## GitOps (Flux CD)
+
+Use this section if you want Flux to manage the manifests in this repo.
+
+### Option A: Bootstrap Flux (Recommended)
+
+This creates the Flux controllers and a sync to this repository.
+
+```bash
+# Install the Flux CLI (Mac)
+brew install fluxcd/tap/flux
+
+# Check prerequisites
+flux check --pre
+
+# Bootstrap (replace placeholders)
+export GITHUB_TOKEN=<YOUR_GITHUB_TOKEN>
+flux bootstrap github \
+   --owner=<GITHUB_ORG_OR_USER> \
+   --repository=<REPO_NAME> \
+   --branch=main \
+   --path=./flux-system \
+   --personal
+```
+
+### Option B: Apply the Existing Flux Manifests
+
+If the repo already contains Flux manifests, apply them directly:
+
+```bash
+kubectl apply -f flux-system/flux-system/gotk-components.yaml
+kubectl apply -f flux-system/flux-system/gotk-sync.yaml
+```
+
+Verify:
+```bash
+kubectl get pods -n flux-system
+kubectl get kustomizations -n flux-system
+```
+
+### Notes
+
+- The manifests in [flux-system/flux-system/kustomization.yaml](flux-system/flux-system/kustomization.yaml)
+   should point to the repo root or the folder you want Flux to reconcile.
+- If you change the sync path, update `spec.path` in the Flux `GitRepository`/`Kustomization`.
 
 ---
 
