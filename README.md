@@ -1,515 +1,421 @@
-# Kubernetes Full-Stack Application Deployment
+# Kubernetes Full-Stack Deployment with Flux CD (GitOps)
 
-A clear guide to running **one Kubernetes cluster** on **one VM** with **two nodes**.
-
----
-
-## Table of Contents
-
-1. [Project Overview](#project-overview)
-2. [Architecture](#architecture)
-3. [Prerequisites](#prerequisites)
-4. [Installation](#installation)
-5. [Application Components](#application-components)
-6. [Deployment](#deployment)
-7. [Access](#access)
-8. [Commands Reference](#commands-reference)
-9. [Troubleshooting](#troubleshooting)
-10. [Next Steps](#next-steps)
-11. [GitOps (Flux CD)](#gitops-flux-cd)
-
----
-
-## Project Overview
-
-**What Was Built:**
-- **One Kubernetes cluster** on a single VM
-- **2 nodes**: 1 control-plane + 1 worker
-- Full-stack app: MongoDB + Backend + Frontend + Ingress
-- Persistent storage for database
-
-**Technology Stack:**
-- Virtualization: Multipass (nested VMs)
-- OS: Ubuntu 22.04 LTS
-- Kubernetes: v1.28 (kubeadm)
-- Container Runtime: containerd
-- Network Plugin: Flannel CNI
-- Registry: Docker Hub
-
----
-
-## Architecture
+## 🏗️ Infrastructure Overview
 
 ```
-VM (142.93.28.130)
-└── Multipass
-      ├── cp-1     - Control Plane
-      └── worker-1 - Worker Node
-```
-
-**Network Flow:**
-```
-Browser → Ingress
-         ↓
-      Frontend
-         ↓
-      Backend
-         ↓
- MongoDB Service
-         ↓
- PersistentVolume (/mnt/data/mongodb)
+Your Laptop
+    ↓ git push
+GitHub (k8s-Infra- repo)
+    ↓ Flux detects change (1 min)
+DigitalOcean VM1 (142.93.28.130)
+    └── Multipass
+        ├── cp-1 (Control Plane)
+        └── worker-1 (Worker Node)
+            └── Notes App (Frontend + Backend + MongoDB)
 ```
 
 ---
 
-## Prerequisites
+## 📦 What's Running
 
-**Hardware:**
-- VM: 4+ CPUs, 8GB+ RAM, 60GB+ disk
-
-**Software:**
-- Docker Desktop (for building images)
-- SSH client
-- Terminal access
-
-**Network (required on the VM):**
-- 6443/tcp (Kubernetes API)
-- 10250/tcp (kubelet)
-- 30000-32767/tcp (NodePort, if you use it)
+| Component | Namespace | Purpose |
+|-----------|-----------|---------|
+| Frontend (React) | notes-app | User interface |
+| Backend (Express) | notes-app | API server |
+| MongoDB | notes-app | Database |
+| NGINX Ingress | ingress-nginx | Routes traffic |
+| Flannel | kube-flannel | Pod networking (CNI) |
+| Flux CD | flux-system | GitOps auto-deployment |
 
 ---
 
-## Installation
+## ⚙️ How GitOps Works (Flux CD)
 
-### Phase 1: VM Setup (Single VM)
+```
+1. You edit code on laptop
+        ↓
+2. git push to GitHub
+        ↓
+3. GitHub Actions builds new Docker image
+        ↓
+4. GitHub Actions updates image tag in k8s-Infra- repo
+        ↓
+5. Flux detects change in k8s-Infra- repo (every 1 min)
+        ↓
+6. Flux applies new manifests to cluster automatically
+        ↓
+7. Kubernetes rolling update (zero downtime)
+        ↓
+8. New pods running with new image ✅
+```
+
+**You only need to push code. Everything else is automatic!**
+
+---
+
+## ⚠️ STATIC - Copy Paste Exactly (Never Changes)
+
+### Step 1: Fix DNS on VM1 (Run Once)
 
 ```bash
-# Install Multipass
-sudo snap install multipass
+# On VM1 (DigitalOcean)
+sudo systemctl disable systemd-resolved
+sudo systemctl stop systemd-resolved
+sudo rm /etc/resolv.conf
+sudo tee /etc/resolv.conf <<EOF
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+EOF
+```
 
-# Create VMs on the host (control-plane + worker)
+### Step 2: Create VMs
+
+```bash
 multipass launch --name cp-1 --cpus 2 --memory 2.5G --disk 20G 22.04
-multipass launch --name worker-1 --cpus 1 --memory 2G --disk 15G 22.04
-
-# Verify
-multipass list
+multipass launch --name worker-1 --cpus 2 --memory 2G --disk 20G 22.04
 ```
 
----
-
-### Phase 2: Kubernetes Installation
-
-**Create installation script:**
+### Step 3: Setup cp-1
 
 ```bash
-cat > install-k8s.sh << 'EOF'
-#!/bin/bash
-# Update and disable swap
-sudo apt update && sudo apt upgrade -y
-sudo swapoff -a
-sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+multipass shell cp-1
 
-# Load kernel modules
-cat <<MODULES | sudo tee /etc/modules-load.d/k8s.conf
-overlay
-br_netfilter
-MODULES
-sudo modprobe overlay
-sudo modprobe br_netfilter
+# Install dependencies
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg containerd
 
-# Configure sysctl
-cat <<SYSCTL | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables  = 1
-net.bridge.bridge-nf-call-ip6tables = 1
-net.ipv4.ip_forward                 = 1
-SYSCTL
-sudo sysctl --system
+# Add Kubernetes repo
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-# Install containerd
-sudo apt install -y containerd
+# Install Kubernetes tools
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+
+# Configure containerd
 sudo mkdir -p /etc/containerd
 containerd config default | sudo tee /etc/containerd/config.toml
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 sudo systemctl restart containerd
-sudo systemctl enable containerd
 
-# Add Kubernetes repo
-sudo apt install -y apt-transport-https ca-certificates curl gpg
-sudo mkdir -p -m 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
-
-# Install Kubernetes
-sudo apt update
-sudo apt install -y kubelet kubeadm kubectl
-sudo apt-mark hold kubelet kubeadm kubectl
-sudo systemctl enable kubelet
+# Fix DNS on cp-1
+sudo mkdir -p /etc/systemd/resolved.conf.d
+sudo tee /etc/systemd/resolved.conf.d/dns.conf <<EOF
+[Resolve]
+DNS=8.8.8.8 8.8.4.4
+FallbackDNS=1.1.1.1
 EOF
+sudo systemctl restart systemd-resolved
 
-chmod +x install-k8s.sh
-```
+# Disable swap
+sudo swapoff -a
 
-**Run on all nodes:**
+# Init cluster (use cp-1 IP)
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=$(hostname -I | awk '{print $1}')
 
-```bash
-# Control-plane
-multipass transfer install-k8s.sh cp-1:/home/ubuntu/
-multipass exec cp-1 -- bash /home/ubuntu/install-k8s.sh
-
-# Worker
-multipass transfer install-k8s.sh worker-1:/home/ubuntu/
-multipass exec worker-1 -- bash /home/ubuntu/install-k8s.sh
-```
-
----
-
-### Phase 3: Cluster Setup
-
-**Initialize control-plane:**
-
-```bash
-multipass shell cp-1
-
-# Initialize (use control-plane IP)
-sudo kubeadm init --apiserver-advertise-address=<CP1_PRIVATE_IP> --pod-network-cidr=10.244.0.0/16
-
-# Configure kubectl
+# Setup kubectl
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Install network plugin
+# Install Flannel CNI
 kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
-
-# Verify
-kubectl get nodes
 ```
 
-**Join workers:**
+### Step 4: Setup worker-1
 
 ```bash
-# Exit master, then join the worker with the command from kubeadm init output
-exit
-
+# On worker-1 - fix DNS first
 multipass shell worker-1
-sudo kubeadm join <CP1_PRIVATE_IP>:6443 --token YOUR_TOKEN --discovery-token-ca-cert-hash sha256:YOUR_HASH
-exit
+
+sudo mkdir -p /etc/systemd/resolved.conf.d
+sudo tee /etc/systemd/resolved.conf.d/dns.conf <<EOF
+[Resolve]
+DNS=8.8.8.8 8.8.4.4
+FallbackDNS=1.1.1.1
+EOF
+sudo systemctl restart systemd-resolved
+
+# Same Kubernetes install steps as cp-1 (except kubeadm init)
+# Then run join command from Step 5
 ```
 
-**Verify cluster:**
+### Step 5: Install Ingress Controller
 
 ```bash
-multipass shell cp-1
-kubectl get nodes
-# All nodes should show "Ready"
+# On cp-1
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/baremetal/deploy.yaml
 ```
 
----
-
-## Application Components
-
-### 1. MongoDB (Database)
-- Type: StatefulSet
-- Storage: 5Gi PersistentVolume (hostPath)
-- Port: 27017
-- Service: Headless (ClusterIP: None)
-
-### 2. Backend API
-- Type: Deployment
-- Image: chenarrr/devops:backend
-- Port: 5000
-- Environment: MONGODB_URI=mongodb://mongodb-service:27017/notes-app
-- Service: ClusterIP
-
-### 3. Frontend
-- Type: Deployment
-- Image: chenarrr/devops:frontend
-- Port: 80
-- Service: ClusterIP (served through Ingress)
-
----
-
-## Repo Layout (GitOps-friendly)
-
-Manifests are organized by component:
-
-- namespace.yaml
-- mongodb/
-- backend/
-- frontend/
-- ingress.yaml
-
-ArgoCD uses a single application pointing to the repo root:
-- argocd-application.yaml → .
-
-## Deployment (Single Cluster)
+### Step 6: Deploy Notes App
 
 ```bash
+# On cp-1
+git clone https://github.com/Chenarrr/k8s-Infra-.git
+cd k8s-Infra-
+
 kubectl apply -f namespace.yaml
-kubectl apply -f mongodb/mongodb-storage.yaml
-kubectl apply -f mongodb/mongodb-statefulset.yaml
-kubectl apply -f mongodb/mongodb-service.yaml
-kubectl apply -f backend/backend-deployment.yaml
-kubectl apply -f backend/backend-service.yaml
-kubectl apply -f frontend/frontend-deployment.yaml
-kubectl apply -f frontend/frontend-service.yaml
+kubectl apply -f mongodb/
+kubectl apply -f backend/
+kubectl apply -f frontend/
 kubectl apply -f ingress.yaml
 ```
 
-**Verify all:**
+### Step 7: Fix CoreDNS
+
 ```bash
-kubectl get all
+kubectl get configmap coredns -n kube-system -o yaml | \
+  sed 's|forward . /etc/resolv.conf|forward . 8.8.8.8 8.8.4.4|g' | \
+  kubectl apply -f -
+
+kubectl delete pods -n kube-system -l k8s-app=kube-dns
+```
+
+### Step 8: Install Flux CD
+
+```bash
+# Install Flux CLI
+curl -LO https://github.com/fluxcd/flux2/releases/download/v2.2.3/flux_2.2.3_linux_amd64.tar.gz
+tar -xzf flux_2.2.3_linux_amd64.tar.gz
+sudo mv flux /usr/local/bin/
+
+# Set GitHub token
+export GITHUB_TOKEN=your_github_token_here
+
+# Bootstrap Flux
+flux bootstrap github \
+  --owner=Chenarrr \
+  --repository=k8s-Infra- \
+  --branch=main \
+  --path=flux-system \
+  --personal
+
+# Verify
+flux get all
 ```
 
 ---
 
-## Access
+## ⚡ DYNAMIC - Check Every Time After Restart
 
-### Method 1: Ingress (Recommended)
-
-Make sure the NGINX Ingress Controller is installed in the cluster. Then use the Ingress controller’s external IP (or the node IP if you’re using NodePort).
-
-If you use NodePort for the Ingress controller, open the firewall and browse to:
-
-```
-http://142.93.28.130:<INGRESS_NODEPORT>
-```
-
-### Method 1b: Port-Forward the Ingress (From Mac)
-
-If you do not have a public LoadBalancer or NodePort, you can port-forward the
-Ingress controller to your Mac.
+### Get cp-1 IP
 
 ```bash
-# Get the ingress controller service name
-kubectl get svc -n ingress-nginx
-
-# Port-forward the controller service to localhost:8080
-kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80
+multipass list
+# cp-1 IP changes after every VM recreation
 ```
 
-Open:
-```
-http://localhost:8080
-```
-
-### Method 2: SSH Tunnel (Quick test)
-
-**From your Mac:**
-```bash
-ssh -L 8080:142.93.28.130:80 root@142.93.28.130
-```
-
-**Then open browser:**
-```
-http://localhost:8080
-```
-
-### Method 3: Port-Forward the Frontend Service (From Mac)
-
-This bypasses the Ingress and exposes the frontend service directly.
+### Get Worker Join Command
 
 ```bash
-kubectl -n default port-forward svc/frontend-service 8081:80
-```
-
-Open:
-```
-http://localhost:8081
-```
-
-## Commands Reference
-
-### Cluster Management
-```bash
-kubectl get nodes                    # View nodes
-kubectl get pods                     # List pods
-kubectl get services                 # List services
-kubectl get all                      # View all resources
-kubectl describe pod POD_NAME        # Pod details
-kubectl logs POD_NAME                # View logs
-kubectl logs -f POD_NAME             # Follow logs
-kubectl exec -it POD_NAME -- /bin/bash  # Shell into pod
-```
-
-### Deployment Management
-```bash
-kubectl scale deployment NAME --replicas=3      # Scale deployment
-kubectl delete pod POD_NAME                     # Delete pod
-kubectl delete deployment NAME                  # Delete deployment
-kubectl rollout status deployment/NAME          # Check rollout
-```
-
-### Storage
-```bash
-kubectl get pv                       # List persistent volumes
-kubectl get pvc                      # List claims
-kubectl describe pv PV_NAME          # PV details
-```
-
-### Multipass
-```bash
-multipass list                       # List VMs
-multipass shell VM_NAME              # Shell into VM
-multipass transfer FILE VM:/path/    # Copy files
-multipass start/stop/restart VM      # Manage VM state
-```
-
----
-
-## Troubleshooting
-
-### Pod Pending
-```bash
-kubectl describe pod POD_NAME
-# Check Events section for resource/volume issues
-```
-
-### ImagePullBackOff
-```bash
-kubectl describe pod POD_NAME
-# Common: Wrong architecture (arm64 vs amd64)
-# Solution: Rebuild image with --platform linux/amd64
-docker buildx build --platform linux/amd64 -t IMAGE --push .
-```
-
-### CrashLoopBackOff
-```bash
-kubectl logs POD_NAME
-kubectl logs POD_NAME --previous
-# Check application errors, environment variables, dependencies
-```
-
-### Service Not Accessible
-```bash
-kubectl get svc                      # Check service
-kubectl get endpoints SERVICE_NAME   # Verify endpoints
-kubectl get pods                     # Ensure pods running
-```
-
-### Worker Not Joining
-```bash
-# On worker:
-sudo systemctl status containerd
-sudo systemctl restart containerd
-
-# On master (generate new token):
+# On cp-1 - regenerate if lost
 kubeadm token create --print-join-command
 ```
 
----
+### Get Ingress NodePort
 
-## Next Steps
-
-### Enhance Setup
-- Add Ingress Controller (Nginx)
-- Implement health checks (liveness/readiness probes)
-- Set up monitoring (Prometheus + Grafana)
-- Configure RBAC for security
-- Use Secrets for sensitive data
-- Implement Network Policies
-
-### Scale Application
 ```bash
-kubectl scale deployment backend --replicas=3
-kubectl autoscale deployment backend --cpu-percent=70 --min=2 --max=10
+kubectl get svc -n ingress-nginx ingress-nginx-controller
+# Look for 80:XXXXX/TCP
 ```
 
-### CI/CD
-- Deploy ArgoCD for GitOps
-- Automate deployments from Git
-- Implement rollback strategies
+### Start Port Forwarding (After Every VM1 Restart)
 
-### Learn More
-- Service Mesh (Istio)
-- Helm Charts
-- Kubernetes Operators
-- Multi-cluster management
-- Try managed Kubernetes (EKS, GKE, AKS, OKE)
+```bash
+# Replace XXXXX with NodePort
+# Replace CP1_IP with cp-1 IP from multipass list
+sudo socat TCP-LISTEN:XXXXX,bind=0.0.0.0,fork,reuseaddr TCP:<CP1_IP>:XXXXX &
+sudo ufw allow XXXXX/tcp
+```
+
+**App URL:** `http://142.93.28.130:XXXXX`
 
 ---
 
-## GitOps (Flux CD)
-
-Use this section if you want Flux to manage the manifests in this repo.
-
-### Option A: Bootstrap Flux (Recommended)
-
-This creates the Flux controllers and a sync to this repository.
+## 🔁 After Every Restart Checklist
 
 ```bash
-# Install the Flux CLI (Mac)
-brew install fluxcd/tap/flux
+# 1. Check VMs running
+multipass list
 
-# Check prerequisites
-flux check --pre
+# 2. Shell into cp-1
+multipass shell cp-1
 
-# Bootstrap (replace placeholders)
-export GITHUB_TOKEN=<YOUR_GITHUB_TOKEN>
-flux bootstrap github \
-   --owner=<GITHUB_ORG_OR_USER> \
-   --repository=<REPO_NAME> \
-   --branch=main \
-   --path=./flux-system \
-   --personal
-```
-
-### Option B: Apply the Existing Flux Manifests
-
-If the repo already contains Flux manifests, apply them directly:
-
-```bash
-kubectl apply -f flux-system/flux-system/gotk-components.yaml
-kubectl apply -f flux-system/flux-system/gotk-sync.yaml
-```
-
-Verify:
-```bash
+# 3. Check cluster
+kubectl get nodes
+kubectl get pods -n notes-app
 kubectl get pods -n flux-system
-kubectl get kustomizations -n flux-system
+
+# 4. Get NodePort
+kubectl get svc -n ingress-nginx ingress-nginx-controller
+
+# 5. Exit and start socat on VM1
+exit
+sudo socat TCP-LISTEN:XXXXX,bind=0.0.0.0,fork,reuseaddr TCP:<CP1_IP>:XXXXX &
+
+# 6. Check Flux is syncing
+multipass shell cp-1
+flux get kustomizations
 ```
 
-### Notes
+---
 
-- The manifests in [flux-system/flux-system/kustomization.yaml](flux-system/flux-system/kustomization.yaml)
-   should point to the repo root or the folder you want Flux to reconcile.
-- If you change the sync path, update `spec.path` in the Flux `GitRepository`/`Kustomization`.
+## 🔧 Daily Flux Commands
+
+```bash
+# Check what commit Flux has pulled
+flux get source git
+
+# Check if Flux applied changes
+flux get kustomizations
+
+# Force Flux to sync NOW (don't wait 1 min)
+flux reconcile source git flux-system
+flux reconcile kustomization flux-system
+
+# Watch Flux deploy in real time
+flux get kustomizations -w
+
+# Check Flux logs
+flux logs --all-namespaces
+
+# Check all Flux resources
+flux get all
+```
 
 ---
 
-## Resources
+## 🔧 Useful kubectl Commands
 
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [kubeadm Setup Guide](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/)
-- [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
-- [Killercoda Labs](https://killercoda.com/)
+```bash
+# Check everything
+kubectl get pods -A
 
----
+# Check app
+kubectl get pods -n notes-app
 
-## Project Summary
+# Check logs
+kubectl logs -n notes-app <pod-name>
 
-**Infrastructure:**
-- Total VMs: 4 (1 main + 3 Kubernetes)
-- Kubernetes Nodes: 3 (1 master + 2 workers)
-- Resources: 4 CPUs, 6.5GB RAM (cluster)
+# Restart a pod
+kubectl delete pod <pod-name> -n notes-app
 
-**Application:**
-- Total Pods: 3-5
-- Services: 4
-- Persistent Volumes: 1 (5Gi)
-- Container Images: 2
-
-**Skills Demonstrated:**
-- Kubernetes cluster setup with kubeadm
-- Multi-tier application deployment
-- Persistent storage management
-- Service networking and discovery
-- Container orchestration
-- Troubleshooting and debugging
+# Force redeploy
+kubectl rollout restart deployment backend -n notes-app
+kubectl rollout restart deployment frontend -n notes-app
+```
 
 ---
 
-**Author:** Chenar  
-**Date:** February 3, 2026  
-**Environment:** Self-hosted datacenter VM  
-**Cluster:** 3-node kubeadm with full-stack application
+## 🚀 How to Deploy New Code
+
+```bash
+# On your laptop:
+# 1. Edit code in DevSecOps repo
+# 2. git push
+
+# GitHub Actions will:
+# - Build new Docker image
+# - Push to Docker Hub
+# - Update image tag in k8s-Infra- repo
+
+# Flux will automatically:
+# - Detect new commit in k8s-Infra- (within 1 min)
+# - Apply new manifests to cluster
+# - Rolling update with zero downtime
+
+# To verify deployment:
+flux get kustomizations
+kubectl get pods -n notes-app
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Pods not starting
+```bash
+kubectl describe pod <pod-name> -n notes-app
+kubectl logs <pod-name> -n notes-app
+```
+
+### Flux not syncing
+```bash
+flux logs
+flux reconcile source git flux-system
+```
+
+### DNS issues
+```bash
+# On cp-1
+cat /etc/resolv.conf
+# Should show 8.8.8.8
+
+# If broken
+echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+```
+
+### Can't access app
+```bash
+# Check socat is running on VM1
+ps aux | grep socat
+
+# Check NodePort
+kubectl get svc -n ingress-nginx ingress-nginx-controller
+
+# Restart socat
+sudo pkill socat
+sudo socat TCP-LISTEN:XXXXX,bind=0.0.0.0,fork,reuseaddr TCP:<CP1_IP>:XXXXX &
+```
+
+### Cluster not responding
+```bash
+# Check kubelet
+sudo systemctl status kubelet
+sudo systemctl restart kubelet
+
+# Check containerd
+sudo systemctl status containerd
+sudo systemctl restart containerd
+```
+
+---
+
+## 📋 Infrastructure Info
+
+| Component | Value |
+|-----------|-------|
+| VM1 IP | 142.93.28.130 |
+| cp-1 IP | `multipass list` |
+| worker-1 IP | `multipass list` |
+| Kubernetes Version | v1.28 |
+| CNI | Flannel |
+| GitOps Tool | Flux CD v2.2.3 |
+| App Namespace | notes-app |
+| Ingress Namespace | ingress-nginx |
+| Flux Namespace | flux-system |
+| App Repo | https://github.com/Chenarrr/DevSecOps |
+| Infra Repo | https://github.com/Chenarrr/k8s-Infra- |
+
+---
+
+## 🗂️ Repo Structure (k8s-Infra-)
+
+```
+k8s-Infra-/
+├── backend/
+│   ├── backend-deployment.yaml
+│   └── backend-service.yaml
+├── frontend/
+│   ├── frontend-deployment.yaml
+│   └── frontend-service.yaml
+├── mongodb/
+│   ├── mongodb-statefulset.yaml
+│   ├── mongodb-service.yaml
+│   └── mongodb-storage.yaml
+├── flux-system/
+│   └── (Flux CD configs - auto-generated)
+├── namespace.yaml
+└── ingress.yaml
+```
