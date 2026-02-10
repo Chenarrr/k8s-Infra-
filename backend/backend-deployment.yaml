@@ -25,7 +25,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: backend
-          image: chenarrr/devops:backend-8e68048
+          image: chenarrr/devops:backend-e8fc743
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
