@@ -4,14 +4,15 @@
 
 ```
 Your Laptop
-    ↓ git push
+    ↓ git push (DevSecOps repo)
+GitHub Actions
+    ↓ builds image, updates image tag in k8s-Infra-
 GitHub (k8s-Infra- repo)
-    ↓ Flux detects change (1 min)
+    ↓ Flux detects change (every 1 min)
 DigitalOcean VM1 (142.93.28.130)
     └── Multipass
-        ├── cp-1 (Control Plane)
-        └── worker-1 (Worker Node)
-            └── Notes App (Frontend + Backend + MongoDB)
+        ├── cp-1 (Control Plane)  ← Flux runs here
+        └── worker-1 (Worker Node) ← App runs here
 ```
 
 ---
@@ -23,39 +24,68 @@ DigitalOcean VM1 (142.93.28.130)
 | Frontend (React) | notes-app | User interface |
 | Backend (Express) | notes-app | API server |
 | MongoDB | notes-app | Database |
-| NGINX Ingress | ingress-nginx | Routes traffic |
+| NGINX Ingress | ingress-nginx | Routes external traffic |
 | Flannel | kube-flannel | Pod networking (CNI) |
 | Flux CD | flux-system | GitOps auto-deployment |
+
+---
+
+## 🗂️ Repo Structure (k8s-Infra-)
+
+```
+k8s-Infra-/
+├── app/                          ← All app manifests live here
+│   ├── frontend/
+│   │   ├── frontend-deployment.yaml
+│   │   └── frontend-service.yaml
+│   ├── mongodb/
+│   │   ├── mongodb-statefulset.yaml
+│   │   ├── mongodb-service.yaml
+│   │   └── mongodb-storage.yaml
+│   ├── backend-deployment.yaml
+│   ├── backend-service.yaml
+│   ├── ingress.yaml
+│   ├── namespace.yaml
+│   └── kustomization.yaml        ← Lists all files Flux should deploy
+├── clusters/
+│   └── notes-app.yaml            ← Flux Kustomization pointing to ./app
+├── flux-system/
+│   └── flux-system/
+│       ├── gotk-components.yaml  ← Flux controllers (auto-generated, don't edit)
+│       ├── gotk-sync.yaml        ← Flux Git sync config (auto-generated, don't edit)
+│       └── kustomization.yaml    ← (auto-generated, don't edit)
+└── README.md
+```
 
 ---
 
 ## ⚙️ How GitOps Works (Flux CD)
 
 ```
-1. You edit code on laptop
+1. You edit code on laptop (DevSecOps repo)
         ↓
 2. git push to GitHub
         ↓
-3. GitHub Actions builds new Docker image
+3. GitHub Actions builds new Docker image → Docker Hub
         ↓
-4. GitHub Actions updates image tag in k8s-Infra- repo
+4. GitHub Actions updates image tag in k8s-Infra-/app/ YAML files
         ↓
-5. Flux detects change in k8s-Infra- repo (every 1 min)
+5. Flux detects new commit in k8s-Infra- (every 1 min)
         ↓
-6. Flux applies new manifests to cluster automatically
+6. Flux reads clusters/notes-app.yaml → watches ./app folder
         ↓
-7. Kubernetes rolling update (zero downtime)
+7. Flux applies changed manifests to cluster
         ↓
-8. New pods running with new image ✅
+8. Kubernetes rolling update → new pods with new image ✅
 ```
 
-**You only need to push code. Everything else is automatic!**
+**You only push code. Everything else is automatic!**
 
 ---
 
 ## ⚠️ STATIC - Copy Paste Exactly (Never Changes)
 
-### Step 1: Fix DNS on VM1 (Run Once)
+### Step 1: Fix DNS on VM1 (Run Once After Fresh Droplet)
 
 ```bash
 # On VM1 (DigitalOcean)
@@ -80,6 +110,15 @@ multipass launch --name worker-1 --cpus 2 --memory 2G --disk 20G 22.04
 ```bash
 multipass shell cp-1
 
+# Fix DNS
+sudo mkdir -p /etc/systemd/resolved.conf.d
+sudo tee /etc/systemd/resolved.conf.d/dns.conf <<EOF
+[Resolve]
+DNS=8.8.8.8 8.8.4.4
+FallbackDNS=1.1.1.1
+EOF
+sudo systemctl restart systemd-resolved
+
 # Install dependencies
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg containerd
@@ -99,19 +138,10 @@ containerd config default | sudo tee /etc/containerd/config.toml
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 sudo systemctl restart containerd
 
-# Fix DNS on cp-1
-sudo mkdir -p /etc/systemd/resolved.conf.d
-sudo tee /etc/systemd/resolved.conf.d/dns.conf <<EOF
-[Resolve]
-DNS=8.8.8.8 8.8.4.4
-FallbackDNS=1.1.1.1
-EOF
-sudo systemctl restart systemd-resolved
-
 # Disable swap
 sudo swapoff -a
 
-# Init cluster (use cp-1 IP)
+# Init cluster
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=$(hostname -I | awk '{print $1}')
 
 # Setup kubectl
@@ -126,9 +156,9 @@ kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/
 ### Step 4: Setup worker-1
 
 ```bash
-# On worker-1 - fix DNS first
 multipass shell worker-1
 
+# Fix DNS
 sudo mkdir -p /etc/systemd/resolved.conf.d
 sudo tee /etc/systemd/resolved.conf.d/dns.conf <<EOF
 [Resolve]
@@ -137,8 +167,8 @@ FallbackDNS=1.1.1.1
 EOF
 sudo systemctl restart systemd-resolved
 
-# Same Kubernetes install steps as cp-1 (except kubeadm init)
-# Then run join command from Step 5
+# Install same packages as cp-1 (repeat apt-get install steps)
+# Then run the join command (see DYNAMIC section)
 ```
 
 ### Step 5: Install Ingress Controller
@@ -148,18 +178,19 @@ sudo systemctl restart systemd-resolved
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/baremetal/deploy.yaml
 ```
 
-### Step 6: Deploy Notes App
+### Step 6: Deploy Notes App (First Time Only)
 
 ```bash
 # On cp-1
 git clone https://github.com/Chenarrr/k8s-Infra-.git
 cd k8s-Infra-
 
-kubectl apply -f namespace.yaml
-kubectl apply -f mongodb/
-kubectl apply -f backend/
-kubectl apply -f frontend/
-kubectl apply -f ingress.yaml
+kubectl apply -f app/namespace.yaml
+kubectl apply -f app/mongodb/
+kubectl apply -f app/backend-deployment.yaml
+kubectl apply -f app/backend-service.yaml
+kubectl apply -f app/frontend/
+kubectl apply -f app/ingress.yaml
 ```
 
 ### Step 7: Fix CoreDNS
@@ -175,15 +206,16 @@ kubectl delete pods -n kube-system -l k8s-app=kube-dns
 ### Step 8: Install Flux CD
 
 ```bash
-# Install Flux CLI
+# On cp-1 - Install Flux CLI
 curl -LO https://github.com/fluxcd/flux2/releases/download/v2.2.3/flux_2.2.3_linux_amd64.tar.gz
 tar -xzf flux_2.2.3_linux_amd64.tar.gz
 sudo mv flux /usr/local/bin/
 
-# Set GitHub token
+# Create GitHub token at: https://github.com/settings/tokens
+# Scopes needed: repo, admin:repo_hook
 export GITHUB_TOKEN=your_github_token_here
 
-# Bootstrap Flux
+# Bootstrap Flux - installs Flux AND commits its config to k8s-Infra- repo
 flux bootstrap github \
   --owner=Chenarrr \
   --repository=k8s-Infra- \
@@ -193,7 +225,61 @@ flux bootstrap github \
 
 # Verify
 flux get all
+kubectl get pods -n flux-system
 ```
+
+### Step 9: Setup Flux to Watch App Folder
+
+These two files tell Flux what to deploy. Create them on your laptop and push.
+
+**clusters/notes-app.yaml:**
+```yaml
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: notes-app
+  namespace: flux-system
+spec:
+  interval: 1m
+  path: ./app
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+```
+
+**app/kustomization.yaml:**
+```yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - frontend/frontend-deployment.yaml
+  - frontend/frontend-service.yaml
+  - mongodb/mongodb-statefulset.yaml
+  - mongodb/mongodb-service.yaml
+  - mongodb/mongodb-storage.yaml
+  - ingress.yaml
+```
+
+```bash
+# Push from laptop
+git add .
+git commit -m "Add Flux kustomizations"
+git push
+
+# Apply on cp-1
+cd ~/k8s-Infra-
+git pull
+kubectl apply -f clusters/notes-app.yaml
+
+# Verify
+flux get kustomizations
+```
+
+Both should show `True` and `Applied revision`.
 
 ---
 
@@ -203,13 +289,12 @@ flux get all
 
 ```bash
 multipass list
-# cp-1 IP changes after every VM recreation
 ```
 
 ### Get Worker Join Command
 
 ```bash
-# On cp-1 - regenerate if lost
+# On cp-1
 kubeadm token create --print-join-command
 ```
 
@@ -223,8 +308,7 @@ kubectl get svc -n ingress-nginx ingress-nginx-controller
 ### Start Port Forwarding (After Every VM1 Restart)
 
 ```bash
-# Replace XXXXX with NodePort
-# Replace CP1_IP with cp-1 IP from multipass list
+# On VM1 - replace XXXXX with NodePort, CP1_IP with cp-1 IP
 sudo socat TCP-LISTEN:XXXXX,bind=0.0.0.0,fork,reuseaddr TCP:<CP1_IP>:XXXXX &
 sudo ufw allow XXXXX/tcp
 ```
@@ -242,7 +326,7 @@ multipass list
 # 2. Shell into cp-1
 multipass shell cp-1
 
-# 3. Check cluster
+# 3. Check cluster and app
 kubectl get nodes
 kubectl get pods -n notes-app
 kubectl get pods -n flux-system
@@ -270,11 +354,11 @@ flux get source git
 # Check if Flux applied changes
 flux get kustomizations
 
-# Force Flux to sync NOW (don't wait 1 min)
+# Force sync NOW (don't wait 1 min)
 flux reconcile source git flux-system
-flux reconcile kustomization flux-system
+flux reconcile kustomization notes-app --with-source
 
-# Watch Flux deploy in real time
+# Watch deploy in real time
 flux get kustomizations -w
 
 # Check Flux logs
@@ -282,6 +366,9 @@ flux logs --all-namespaces
 
 # Check all Flux resources
 flux get all
+
+# Check what image pods are running
+kubectl get pods -n notes-app -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
 ```
 
 ---
@@ -292,18 +379,18 @@ flux get all
 # Check everything
 kubectl get pods -A
 
-# Check app
+# Check app pods
 kubectl get pods -n notes-app
 
-# Check logs
+# Check pod logs
 kubectl logs -n notes-app <pod-name>
 
-# Restart a pod
-kubectl delete pod <pod-name> -n notes-app
-
-# Force redeploy
+# Restart a deployment
 kubectl rollout restart deployment backend -n notes-app
 kubectl rollout restart deployment frontend -n notes-app
+
+# Check node resources
+kubectl describe node worker-1 | grep -A 10 "Allocated resources"
 ```
 
 ---
@@ -311,23 +398,21 @@ kubectl rollout restart deployment frontend -n notes-app
 ## 🚀 How to Deploy New Code
 
 ```bash
-# On your laptop:
 # 1. Edit code in DevSecOps repo
 # 2. git push
 
-# GitHub Actions will:
-# - Build new Docker image
-# - Push to Docker Hub
-# - Update image tag in k8s-Infra- repo
+# GitHub Actions automatically:
+#   → Builds new Docker image
+#   → Pushes to Docker Hub
+#   → Updates image tag in k8s-Infra-/app/ YAML files
 
-# Flux will automatically:
-# - Detect new commit in k8s-Infra- (within 1 min)
-# - Apply new manifests to cluster
-# - Rolling update with zero downtime
+# Flux automatically within 1 min:
+#   → Detects new commit in k8s-Infra-
+#   → Applies updated manifests to cluster
+#   → Rolling update, zero downtime
 
-# To verify deployment:
-flux get kustomizations
-kubectl get pods -n notes-app
+# Verify new image is running:
+kubectl get pods -n notes-app -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
 ```
 
 ---
@@ -344,21 +429,22 @@ kubectl logs <pod-name> -n notes-app
 ```bash
 flux logs
 flux reconcile source git flux-system
+flux reconcile kustomization notes-app --with-source
 ```
 
 ### Flux SSH key error (after rebuilding cluster)
-This happens when you rebuild the cluster but old deploy key is still on GitHub.
+Happens when you rebuild cluster but old deploy key is still on GitHub.
 ```bash
 # 1. Go to: https://github.com/Chenarrr/k8s-Infra-/settings/keys
-# 2. Delete the key named: flux-system-main-flux-system-./flux-system
-# 3. Delete old flux-system folder from repo
+# 2. Delete key named: flux-system-main-flux-system-./flux-system
+# 3. Remove old flux-system folder from repo
 cd k8s-Infra-
 rm -rf flux-system
 git add .
 git commit -m "Remove old Flux config"
 git push
 
-# 4. Re-bootstrap Flux
+# 4. Re-bootstrap
 export GITHUB_TOKEN=your_token_here
 flux bootstrap github \
   --owner=Chenarrr \
@@ -366,40 +452,35 @@ flux bootstrap github \
   --branch=main \
   --path=flux-system \
   --personal
+
+# 5. Re-apply notes-app kustomization
+kubectl apply -f ~/k8s-Infra-/clusters/notes-app.yaml
 ```
 
-### Flux pulled commit but pods not updated
-Your local clone on cp-1 is outdated. Pull and apply manually once:
+### Flux kustomization conflict error
 ```bash
-cd ~/k8s-Infra-
-git pull
-kubectl apply -f backend/
-kubectl apply -f frontend/
+kubectl delete kustomization notes-app -n flux-system
+kubectl apply -f ~/k8s-Infra-/clusters/notes-app.yaml
+flux reconcile kustomization notes-app --with-source
 ```
 
 ### Pods stuck in Pending (Insufficient CPU)
-Worker-1 is out of CPU. Delete old pods first:
 ```bash
 kubectl delete pods --all -n notes-app
 kubectl get pods -n notes-app -w
 ```
 
-### DNS issues
+### DNS issues on cp-1
 ```bash
-# On cp-1
-cat /etc/resolv.conf
-# Should show 8.8.8.8
-
-# If broken
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
 ```
 
-### Can't access app
+### Can't access app from browser
 ```bash
 # Check socat is running on VM1
 ps aux | grep socat
 
-# Check NodePort
+# Get NodePort
 kubectl get svc -n ingress-nginx ingress-nginx-controller
 
 # Restart socat
@@ -409,12 +490,7 @@ sudo socat TCP-LISTEN:XXXXX,bind=0.0.0.0,fork,reuseaddr TCP:<CP1_IP>:XXXXX &
 
 ### Cluster not responding
 ```bash
-# Check kubelet
-sudo systemctl status kubelet
 sudo systemctl restart kubelet
-
-# Check containerd
-sudo systemctl status containerd
 sudo systemctl restart containerd
 ```
 
@@ -435,25 +511,3 @@ sudo systemctl restart containerd
 | Flux Namespace | flux-system |
 | App Repo | https://github.com/Chenarrr/DevSecOps |
 | Infra Repo | https://github.com/Chenarrr/k8s-Infra- |
-
----
-
-## 🗂️ Repo Structure (k8s-Infra-)
-
-```
-k8s-Infra-/
-├── backend/
-│   ├── backend-deployment.yaml
-│   └── backend-service.yaml
-├── frontend/
-│   ├── frontend-deployment.yaml
-│   └── frontend-service.yaml
-├── mongodb/
-│   ├── mongodb-statefulset.yaml
-│   ├── mongodb-service.yaml
-│   └── mongodb-storage.yaml
-├── flux-system/
-│   └── (Flux CD configs - auto-generated)
-├── namespace.yaml
-└── ingress.yaml
-```
