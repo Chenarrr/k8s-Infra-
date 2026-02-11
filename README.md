@@ -346,6 +346,44 @@ flux logs
 flux reconcile source git flux-system
 ```
 
+### Flux SSH key error (after rebuilding cluster)
+This happens when you rebuild the cluster but old deploy key is still on GitHub.
+```bash
+# 1. Go to: https://github.com/Chenarrr/k8s-Infra-/settings/keys
+# 2. Delete the key named: flux-system-main-flux-system-./flux-system
+# 3. Delete old flux-system folder from repo
+cd k8s-Infra-
+rm -rf flux-system
+git add .
+git commit -m "Remove old Flux config"
+git push
+
+# 4. Re-bootstrap Flux
+export GITHUB_TOKEN=your_token_here
+flux bootstrap github \
+  --owner=Chenarrr \
+  --repository=k8s-Infra- \
+  --branch=main \
+  --path=flux-system \
+  --personal
+```
+
+### Flux pulled commit but pods not updated
+Your local clone on cp-1 is outdated. Pull and apply manually once:
+```bash
+cd ~/k8s-Infra-
+git pull
+kubectl apply -f backend/
+kubectl apply -f frontend/
+```
+
+### Pods stuck in Pending (Insufficient CPU)
+Worker-1 is out of CPU. Delete old pods first:
+```bash
+kubectl delete pods --all -n notes-app
+kubectl get pods -n notes-app -w
+```
+
 ### DNS issues
 ```bash
 # On cp-1
