@@ -13,6 +13,11 @@ DigitalOcean VM1 (142.93.28.130)
     └── Multipass
         ├── cp-1 (Control Plane)  ← Flux runs here
         └── worker-1 (Worker Node) ← App runs here
+
+DigitalOcean VM2 (159.65.118.205)
+    └── Rancher Server (Docker)   ← Web UI to manage cluster
+            ↓ imported/manages
+        notes-cluster (cp-1 + worker-1)
 ```
 
 ---
@@ -27,6 +32,7 @@ DigitalOcean VM1 (142.93.28.130)
 | NGINX Ingress | ingress-nginx | Routes external traffic |
 | Flannel | kube-flannel | Pod networking (CNI) |
 | Flux CD | flux-system | GitOps auto-deployment |
+| Rancher | cattle-system | Web UI cluster management |
 
 ---
 
@@ -511,3 +517,99 @@ sudo systemctl restart containerd
 | Flux Namespace | flux-system |
 | App Repo | https://github.com/Chenarrr/DevSecOps |
 | Infra Repo | https://github.com/Chenarrr/k8s-Infra- |
+| Rancher URL | https://159.65.118.205 |
+| Rancher User | admin |
+| Rancher Cluster | notes-cluster |
+
+---
+
+## 🐄 Rancher Setup (Cluster Web UI)
+
+Rancher is a web dashboard running on VM2 that lets you manage your Kubernetes cluster visually instead of using kubectl commands.
+
+**Access:** `https://159.65.118.205`
+**Username:** `admin`
+**Password:** `LjZG1mP3KmvyhAq6` ← save this somewhere safe!
+
+### How Rancher Connects to Your Cluster
+
+```
+VM2 (Rancher Server)
+    ↓ Rancher agent installed on cluster
+cp-1 (Kubernetes Control Plane)
+    └── Rancher agent runs here, reports back to VM2
+```
+
+### Step 10: Install Rancher on VM2
+
+```bash
+# On VM2 (159.65.118.205)
+
+# Install Docker
+curl -fsSL https://get.docker.com | sh
+
+# Run Rancher
+docker run -d \
+  --restart=unless-stopped \
+  -p 80:80 \
+  -p 443:443 \
+  --privileged \
+  rancher/rancher:latest
+```
+
+Wait 2-3 minutes then open `https://159.65.118.205` in browser.
+
+Get bootstrap password:
+```bash
+docker logs $(docker ps -q) 2>&1 | grep "Bootstrap Password:"
+```
+
+### Step 11: Import Your Cluster into Rancher
+
+1. Open `https://159.65.118.205`
+2. Login with bootstrap password
+3. Set new password and confirm Server URL
+4. Click **Import Existing** on the home screen
+5. Give cluster name: `notes-cluster`
+6. Click **Create**
+7. Copy the `curl --insecure` command shown on screen
+8. Run it on cp-1:
+
+```bash
+# On cp-1 - paste the command from Rancher UI
+# It looks like this (your URL will differ):
+curl --insecure -sfL https://159.65.118.205/v3/import/<unique-token>.yaml | kubectl apply -f -
+```
+
+9. Wait 1-2 minutes and refresh Rancher - cluster shows **Active** ✅
+
+### What You Can Do in Rancher
+
+- **Workloads** → see all pods, deployments, restart them
+- **Services** → see all services and ports
+- **Config** → view ConfigMaps and Secrets
+- **Namespaces** → switch between notes-app, flux-system, ingress-nginx
+- **Logs** → click any pod → view logs without kubectl
+- **Shell** → exec into any pod from browser
+- **Events** → see what's happening in real time
+
+### Rancher Troubleshooting
+
+#### Cluster stuck in Provisioning
+```bash
+# On cp-1 - check if Rancher agent is running
+kubectl get pods -n cattle-system
+```
+
+#### Can't reach Rancher UI
+```bash
+# On VM2 - check Docker is running
+docker ps
+docker logs $(docker ps -q) | tail -20
+```
+
+#### Re-import cluster after rebuild
+```bash
+# In Rancher UI: delete old cluster → Import Existing → new name
+# Run new curl command on cp-1
+```
