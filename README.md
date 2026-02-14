@@ -1,34 +1,34 @@
 # Kubernetes Full-Stack Deployment with Flux CD (GitOps)
 
-## 🏗️ Infrastructure Overview
+## Infrastructure Overview
 
 ```
 Your Laptop
-    ↓ git push (DevSecOps repo)
+    | git push (DevSecOps repo)
 GitHub Actions
-    ↓ builds image, updates image tag in k8s-Infra-
+    | builds image, updates image tag in k8s-Infra-
 GitHub (k8s-Infra- repo)
-    ↓ Flux detects change (every 1 min)
+    | Flux detects change (every 1 min)
 DigitalOcean VM1 (142.93.28.130)
-    └── Multipass
-        ├── cp-1 (Control Plane)  ← Flux runs here
-        └── worker-1 (Worker Node) ← App runs here
+    +-- Multipass
+        +-- cp-1 (Control Plane)  <- Flux runs here
+        +-- worker-1 (Worker Node) <- App runs here
 
 DigitalOcean VM2 (159.65.118.205)
-    └── Rancher Server (Docker)   ← Web UI to manage cluster
-            ↓ imported/manages
+    +-- Rancher Server (Docker)   <- Web UI to manage cluster
+            | imported/manages
         notes-cluster (cp-1 + worker-1)
 ```
 
 ---
 
-## 📦 What's Running
+## What's Running
 
 | Component | Namespace | Purpose |
 |-----------|-----------|---------|
-| Frontend (React) | notes-app | User interface |
-| Backend (Express) | notes-app | API server |
-| MongoDB | notes-app | Database |
+| Frontend (React + Nginx) | notes-app | User interface (port 80) |
+| Backend (Express.js) | notes-app | API server (port 5000) |
+| MongoDB 8 (StatefulSet) | notes-app | Database (port 27017) |
 | NGINX Ingress | ingress-nginx | Routes external traffic |
 | Flannel | kube-flannel | Pod networking (CNI) |
 | Flux CD | flux-system | GitOps auto-deployment |
@@ -36,60 +36,102 @@ DigitalOcean VM2 (159.65.118.205)
 
 ---
 
-## 🗂️ Repo Structure (k8s-Infra-)
+## Repo Structure (k8s-Infra-)
 
 ```
 k8s-Infra-/
-├── app/                          ← All app manifests live here
-│   ├── frontend/
-│   │   ├── frontend-deployment.yaml
-│   │   └── frontend-service.yaml
-│   ├── mongodb/
-│   │   ├── mongodb-statefulset.yaml
-│   │   ├── mongodb-service.yaml
-│   │   └── mongodb-storage.yaml
-│   ├── backend-deployment.yaml
-│   ├── backend-service.yaml
-│   ├── ingress.yaml
-│   ├── namespace.yaml
-│   └── kustomization.yaml        ← Lists all files Flux should deploy
-├── clusters/
-│   └── notes-app.yaml            ← Flux Kustomization pointing to ./app
-├── flux-system/
-│   └── flux-system/
-│       ├── gotk-components.yaml  ← Flux controllers (auto-generated, don't edit)
-│       ├── gotk-sync.yaml        ← Flux Git sync config (auto-generated, don't edit)
-│       └── kustomization.yaml    ← (auto-generated, don't edit)
-└── README.md
++-- app/                              <- Flux watches this folder
+|   +-- namespace.yaml                <- notes-app namespace
+|   +-- notes-app-helmrelease.yaml    <- Flux HelmRelease (deploys the chart)
+|   +-- kustomization.yaml            <- Lists resources for Flux
++-- charts/
+|   +-- notes-app/                    <- Helm chart
+|       +-- Chart.yaml                <- Chart metadata (v0.1.0)
+|       +-- values.yaml               <- Base values (all defaults)
+|       +-- values-dev.yaml           <- Dev overrides (lower resources)
+|       +-- values-prod.yaml          <- Prod overrides (image tags)
+|       +-- templates/
+|           +-- _helpers.tpl          <- Template helpers
+|           +-- backend.yaml          <- Backend Deployment + Service
+|           +-- frontend.yaml         <- Frontend Deployment + Service
+|           +-- mongodb.yaml          <- MongoDB StatefulSet + PV/PVC + Service
+|           +-- ingress.yaml          <- NGINX Ingress
++-- clusters/
+|   +-- notes-app.yaml               <- Flux Kustomization pointing to ./app
++-- flux-system/
+|   +-- flux-system/
+|       +-- gotk-components.yaml      <- Flux controllers (auto-generated, don't edit)
+|       +-- gotk-sync.yaml           <- Flux Git sync config (auto-generated)
+|       +-- kustomization.yaml       <- (auto-generated, don't edit)
++-- README.md
 ```
 
 ---
 
-## ⚙️ How GitOps Works (Flux CD)
+## Helm Chart Configuration
+
+The app is deployed via a Helm chart at `charts/notes-app/`. Values are layered:
+
+**Production** (what Flux uses): `values.yaml` + `values-prod.yaml`
+**Development**: `values.yaml` + `values-dev.yaml`
+
+### Key Values
+
+| Setting | Production | Development |
+|---------|-----------|-------------|
+| Backend image | `chenarrr/devops:backend-<sha>` | `chenarrr/devops:backend-dev` |
+| Frontend image | `chenarrr/devops:frontend-<sha>` | `chenarrr/devops:frontend-dev` |
+| MongoDB image | `mongo:8` | `mongo:8` |
+| Backend CPU | 100m-200m | 50m-100m |
+| Backend memory | 128Mi-256Mi | 64Mi-128Mi |
+| Frontend CPU | 100m-200m | 50m-100m |
+| Frontend memory | 128Mi-256Mi | 64Mi-128Mi |
+| MongoDB CPU | 250m-500m | 100m-250m |
+| MongoDB memory | 256Mi-512Mi | 128Mi-256Mi |
+| NODE_ENV | production | development |
+
+### Security Context (Backend)
+
+- `runAsNonRoot: true`, `runAsUser: 1000`
+- `allowPrivilegeEscalation: false`
+
+### Health Checks
+
+| Component | Readiness | Liveness |
+|-----------|-----------|----------|
+| Backend | `GET /api/notes` (5s delay) | `GET /api/notes` (15s delay) |
+| Frontend | `GET /` (5s delay) | `GET /` (10s delay) |
+| MongoDB | `mongosh --eval db.adminCommand('ping')` (10s delay) | same (30s delay) |
+
+---
+
+## How GitOps Works (Flux CD)
 
 ```
 1. You edit code on laptop (DevSecOps repo)
-        ↓
+        |
 2. git push to GitHub
-        ↓
-3. GitHub Actions builds new Docker image → Docker Hub
-        ↓
-4. GitHub Actions updates image tag in k8s-Infra-/app/ YAML files
-        ↓
-5. Flux detects new commit in k8s-Infra- (every 1 min)
-        ↓
-6. Flux reads clusters/notes-app.yaml → watches ./app folder
-        ↓
-7. Flux applies changed manifests to cluster
-        ↓
-8. Kubernetes rolling update → new pods with new image ✅
+        |
+3. GitHub Actions builds new Docker image -> Docker Hub
+        |
+4. GitHub Actions runs Trivy security scan (CRITICAL + HIGH)
+        |
+5. GitHub Actions updates image tags in charts/notes-app/values.yaml
+        |
+6. Flux detects new commit in k8s-Infra- (every 1 min)
+        |
+7. Flux reads clusters/notes-app.yaml -> watches ./app folder
+        |
+8. Flux applies HelmRelease -> Helm renders templates with values
+        |
+9. Kubernetes rolling update -> new pods with new image
 ```
 
 **You only push code. Everything else is automatic!**
 
 ---
 
-## ⚠️ STATIC - Copy Paste Exactly (Never Changes)
+## STATIC - Copy Paste Exactly (Never Changes)
 
 ### Step 1: Fix DNS on VM1 (Run Once After Fresh Droplet)
 
@@ -184,22 +226,7 @@ sudo systemctl restart systemd-resolved
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/baremetal/deploy.yaml
 ```
 
-### Step 6: Deploy Notes App (First Time Only)
-
-```bash
-# On cp-1
-git clone https://github.com/Chenarrr/k8s-Infra-.git
-cd k8s-Infra-
-
-kubectl apply -f app/namespace.yaml
-kubectl apply -f app/mongodb/
-kubectl apply -f app/backend-deployment.yaml
-kubectl apply -f app/backend-service.yaml
-kubectl apply -f app/frontend/
-kubectl apply -f app/ingress.yaml
-```
-
-### Step 7: Fix CoreDNS
+### Step 6: Fix CoreDNS
 
 ```bash
 kubectl get configmap coredns -n kube-system -o yaml | \
@@ -209,7 +236,7 @@ kubectl get configmap coredns -n kube-system -o yaml | \
 kubectl delete pods -n kube-system -l k8s-app=kube-dns
 ```
 
-### Step 8: Install Flux CD
+### Step 7: Install Flux CD
 
 ```bash
 # On cp-1 - Install Flux CLI
@@ -234,62 +261,24 @@ flux get all
 kubectl get pods -n flux-system
 ```
 
-### Step 9: Setup Flux to Watch App Folder
+### Step 8: Deploy App via Flux
 
-These two files tell Flux what to deploy. Create them on your laptop and push.
-
-**clusters/notes-app.yaml:**
-```yaml
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: notes-app
-  namespace: flux-system
-spec:
-  interval: 1m
-  path: ./app
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-```
-
-**app/kustomization.yaml:**
-```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - namespace.yaml
-  - backend-deployment.yaml
-  - backend-service.yaml
-  - frontend/frontend-deployment.yaml
-  - frontend/frontend-service.yaml
-  - mongodb/mongodb-statefulset.yaml
-  - mongodb/mongodb-service.yaml
-  - mongodb/mongodb-storage.yaml
-  - ingress.yaml
-```
+Flux automatically deploys the app using the HelmRelease in `app/notes-app-helmrelease.yaml`. After bootstrapping Flux, apply the cluster kustomization:
 
 ```bash
-# Push from laptop
-git add .
-git commit -m "Add Flux kustomizations"
-git push
+# On cp-1
+kubectl apply -f ~/k8s-Infra-/clusters/notes-app.yaml
 
-# Apply on cp-1
-cd ~/k8s-Infra-
-git pull
-kubectl apply -f clusters/notes-app.yaml
-
-# Verify
+# Verify Flux picked it up
 flux get kustomizations
+flux get helmreleases -A
 ```
 
 Both should show `True` and `Applied revision`.
 
 ---
 
-## ⚡ DYNAMIC - Check Every Time After Restart
+## DYNAMIC - Check Every Time After Restart
 
 ### Get cp-1 IP
 
@@ -323,7 +312,7 @@ sudo ufw allow XXXXX/tcp
 
 ---
 
-## 🔁 After Every Restart Checklist
+## After Every Restart Checklist
 
 ```bash
 # 1. Check VMs running
@@ -337,21 +326,24 @@ kubectl get nodes
 kubectl get pods -n notes-app
 kubectl get pods -n flux-system
 
-# 4. Get NodePort
+# 4. Check Flux HelmRelease
+flux get helmreleases -A
+
+# 5. Get NodePort
 kubectl get svc -n ingress-nginx ingress-nginx-controller
 
-# 5. Exit and start socat on VM1
+# 6. Exit and start socat on VM1
 exit
 sudo socat TCP-LISTEN:XXXXX,bind=0.0.0.0,fork,reuseaddr TCP:<CP1_IP>:XXXXX &
 
-# 6. Check Flux is syncing
+# 7. Check Flux is syncing
 multipass shell cp-1
 flux get kustomizations
 ```
 
 ---
 
-## 🔧 Daily Flux Commands
+## Daily Flux Commands
 
 ```bash
 # Check what commit Flux has pulled
@@ -359,6 +351,9 @@ flux get source git
 
 # Check if Flux applied changes
 flux get kustomizations
+
+# Check HelmRelease status
+flux get helmreleases -A
 
 # Force sync NOW (don't wait 1 min)
 flux reconcile source git flux-system
@@ -379,7 +374,7 @@ kubectl get pods -n notes-app -o jsonpath='{range .items[*]}{.metadata.name}{"\t
 
 ---
 
-## 🔧 Useful kubectl Commands
+## Useful kubectl Commands
 
 ```bash
 # Check everything
@@ -397,25 +392,30 @@ kubectl rollout restart deployment frontend -n notes-app
 
 # Check node resources
 kubectl describe node worker-1 | grep -A 10 "Allocated resources"
+
+# Check Helm release values
+helm get values notes-app -n notes-app
 ```
 
 ---
 
-## 🚀 How to Deploy New Code
+## How to Deploy New Code
 
 ```bash
 # 1. Edit code in DevSecOps repo
 # 2. git push
 
 # GitHub Actions automatically:
-#   → Builds new Docker image
-#   → Pushes to Docker Hub
-#   → Updates image tag in k8s-Infra-/app/ YAML files
+#   -> Lints and builds frontend/backend
+#   -> Builds Docker images and pushes to Docker Hub
+#   -> Runs Trivy security scan (CRITICAL + HIGH)
+#   -> Updates image tags in charts/notes-app/values.yaml
 
 # Flux automatically within 1 min:
-#   → Detects new commit in k8s-Infra-
-#   → Applies updated manifests to cluster
-#   → Rolling update, zero downtime
+#   -> Detects new commit in k8s-Infra-
+#   -> Reconciles HelmRelease
+#   -> Helm renders templates with new image tags
+#   -> Rolling update, zero downtime
 
 # Verify new image is running:
 kubectl get pods -n notes-app -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
@@ -423,7 +423,7 @@ kubectl get pods -n notes-app -o jsonpath='{range .items[*]}{.metadata.name}{"\t
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Pods not starting
 ```bash
@@ -436,6 +436,12 @@ kubectl logs <pod-name> -n notes-app
 flux logs
 flux reconcile source git flux-system
 flux reconcile kustomization notes-app --with-source
+```
+
+### HelmRelease failing
+```bash
+flux get helmreleases -A
+kubectl describe helmrelease notes-app -n flux-system
 ```
 
 ### Flux SSH key error (after rebuilding cluster)
@@ -480,15 +486,13 @@ kubectl get pods -n notes-app -w
 
 **Symptom:** After deployments, old and new pods both run and old ones don't terminate.
 
-**Why:** Worker-1 has limited CPU. Rolling updates try to start new pods before stopping old ones → not enough CPU → deadlock.
+**Why:** Worker-1 has limited CPU. Rolling updates try to start new pods before stopping old ones -> not enough CPU -> deadlock.
 
 **Fix (After Every Deployment):**
 ```bash
 kubectl delete pods --all -n notes-app
 kubectl get pods -n notes-app -w
 ```
-
-This forces old pods to terminate and new ones to start fresh.
 
 ### DNS issues on cp-1
 ```bash
@@ -516,7 +520,7 @@ sudo systemctl restart containerd
 
 ---
 
-## 📋 Infrastructure Info
+## Infrastructure Info
 
 | Component | Value |
 |-----------|-------|
@@ -531,30 +535,31 @@ sudo systemctl restart containerd
 | Flux Namespace | flux-system |
 | App Repo | https://github.com/Chenarrr/DevSecOps |
 | Infra Repo | https://github.com/Chenarrr/k8s-Infra- |
+| Docker Hub | chenarrr/devops |
 | Rancher URL | https://159.65.118.205 |
 | Rancher User | admin |
 | Rancher Cluster | notes-cluster |
 
 ---
 
-## 🐄 Rancher Setup (Cluster Web UI)
+## Rancher Setup (Cluster Web UI)
 
 Rancher is a web dashboard running on VM2 that lets you manage your Kubernetes cluster visually instead of using kubectl commands.
 
 **Access:** `https://159.65.118.205`
 **Username:** `admin`
-**Password:** `LjZG1mP3KmvyhAq6` ← save this somewhere safe!
+**Password:** `LjZG1mP3KmvyhAq6`
 
 ### How Rancher Connects to Your Cluster
 
 ```
 VM2 (Rancher Server)
-    ↓ Rancher agent installed on cluster
+    | Rancher agent installed on cluster
 cp-1 (Kubernetes Control Plane)
-    └── Rancher agent runs here, reports back to VM2
+    +-- Rancher agent runs here, reports back to VM2
 ```
 
-### Step 10: Install Rancher on VM2
+### Step 9: Install Rancher on VM2
 
 ```bash
 # On VM2 (159.65.118.205)
@@ -578,7 +583,7 @@ Get bootstrap password:
 docker logs $(docker ps -q) 2>&1 | grep "Bootstrap Password:"
 ```
 
-### Step 11: Import Your Cluster into Rancher
+### Step 10: Import Your Cluster into Rancher
 
 1. Open `https://159.65.118.205`
 2. Login with bootstrap password
@@ -591,21 +596,20 @@ docker logs $(docker ps -q) 2>&1 | grep "Bootstrap Password:"
 
 ```bash
 # On cp-1 - paste the command from Rancher UI
-# It looks like this (your URL will differ):
 curl --insecure -sfL https://159.65.118.205/v3/import/<unique-token>.yaml | kubectl apply -f -
 ```
 
-9. Wait 1-2 minutes and refresh Rancher - cluster shows **Active** ✅
+9. Wait 1-2 minutes and refresh Rancher - cluster shows **Active**
 
 ### What You Can Do in Rancher
 
-- **Workloads** → see all pods, deployments, restart them
-- **Services** → see all services and ports
-- **Config** → view ConfigMaps and Secrets
-- **Namespaces** → switch between notes-app, flux-system, ingress-nginx
-- **Logs** → click any pod → view logs without kubectl
-- **Shell** → exec into any pod from browser
-- **Events** → see what's happening in real time
+- **Workloads** -> see all pods, deployments, restart them
+- **Services** -> see all services and ports
+- **Config** -> view ConfigMaps and Secrets
+- **Namespaces** -> switch between notes-app, flux-system, ingress-nginx
+- **Logs** -> click any pod -> view logs without kubectl
+- **Shell** -> exec into any pod from browser
+- **Events** -> see what's happening in real time
 
 ### Rancher Troubleshooting
 
@@ -624,6 +628,6 @@ docker logs $(docker ps -q) | tail -20
 
 #### Re-import cluster after rebuild
 ```bash
-# In Rancher UI: delete old cluster → Import Existing → new name
+# In Rancher UI: delete old cluster -> Import Existing -> new name
 # Run new curl command on cp-1
 ```
