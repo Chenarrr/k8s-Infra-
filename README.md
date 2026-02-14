@@ -476,6 +476,20 @@ kubectl delete pods --all -n notes-app
 kubectl get pods -n notes-app -w
 ```
 
+### Rolling Update Issue (CPU Constraint)
+
+**Symptom:** After deployments, old and new pods both run and old ones don't terminate.
+
+**Why:** Worker-1 has limited CPU. Rolling updates try to start new pods before stopping old ones → not enough CPU → deadlock.
+
+**Fix (After Every Deployment):**
+```bash
+kubectl delete pods --all -n notes-app
+kubectl get pods -n notes-app -w
+```
+
+This forces old pods to terminate and new ones to start fresh.
+
 ### DNS issues on cp-1
 ```bash
 echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
