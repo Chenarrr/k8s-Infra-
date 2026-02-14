@@ -1,0 +1,126 @@
+nameOverride: ""
+fullnameOverride: notes-app
+
+backend:
+  enabled: true
+  name: backend
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: notes-app
+  replicaCount: 1
+  image:
+    repository: chenarrr/devops
+    tag: backend-70d658a
+    pullPolicy: Always
+  containerPort: 5000
+  service:
+    type: ClusterIP
+    port: 5000
+  env:
+    mongodbUri: mongodb://mongodb-service:27017/notes-app
+    nodeEnv: production
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  readinessProbe:
+    path: /api/notes
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+  livenessProbe:
+    path: /api/notes
+    initialDelaySeconds: 15
+    periodSeconds: 30
+    timeoutSeconds: 3
+
+frontend:
+  enabled: true
+  name: frontend
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: notes-app
+  replicaCount: 1
+  image:
+    repository: chenarrr/devops
+    tag: frontend-70d658a
+    pullPolicy: Always
+  containerPort: 80
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  securityContext:
+    allowPrivilegeEscalation: false
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 3
+
+mongodb:
+  enabled: true
+  name: mongodb
+  serviceName: mongodb-service
+  labels:
+    app.kubernetes.io/name: mongodb
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: notes-app
+  replicaCount: 1
+  image:
+    repository: mongo
+    tag: "8"
+  containerPort: 27017
+  storage:
+    storageClassName: manual
+    size: 5Gi
+    hostPath: /mnt/data/mongodb
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  readinessProbe:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+  livenessProbe:
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+
+ingress:
+  enabled: true
+  name: notes-app-ingress
+  labels:
+    app.kubernetes.io/part-of: notes-app
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 10m
+  className: nginx
+  path: /
+  pathType: Prefix

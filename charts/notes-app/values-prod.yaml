@@ -1,0 +1,9 @@
+backend:
+  image:
+    tag: backend-70d658a
+  env:
+    nodeEnv: production
+
+frontend:
+  image:
+    tag: frontend-70d658a

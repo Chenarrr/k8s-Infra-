@@ -1,0 +1,29 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: notes-app
+  namespace: flux-system
+spec:
+  interval: 1m
+  releaseName: notes-app
+  targetNamespace: notes-app
+  timeout: 5m
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: ./charts/notes-app
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      interval: 1m
+      reconcileStrategy: Revision
+      valuesFiles:
+        - ./charts/notes-app/values.yaml
+        - ./charts/notes-app/values-prod.yaml
