@@ -94,13 +94,13 @@ mongodb:
       memory: 512Mi
       cpu: 200m
   readinessProbe:
-    initialDelaySeconds: 10
+    initialDelaySeconds: 20
     periodSeconds: 10
-    timeoutSeconds: 5
+    timeoutSeconds: 10
   livenessProbe:
-    initialDelaySeconds: 30
+    initialDelaySeconds: 60
     periodSeconds: 30
-    timeoutSeconds: 5
+    timeoutSeconds: 10
 
 ingress:
   enabled: true
