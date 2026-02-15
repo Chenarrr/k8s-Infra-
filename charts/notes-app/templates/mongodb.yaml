@@ -75,7 +75,7 @@ spec:
               command:
                 - mongosh
                 - --eval
-                - db.adminCommand('ping')
+                - "db.adminCommand('ping')"
             initialDelaySeconds: {{ .Values.mongodb.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.mongodb.readinessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.mongodb.readinessProbe.timeoutSeconds }}
@@ -84,7 +84,7 @@ spec:
               command:
                 - mongosh
                 - --eval
-                - db.adminCommand('ping')
+                - "db.adminCommand('ping')"
             initialDelaySeconds: {{ .Values.mongodb.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.mongodb.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.mongodb.livenessProbe.timeoutSeconds }}
@@ -95,3 +95,4 @@ spec:
           persistentVolumeClaim:
             claimName: mongodb-pvc
 {{- end }}
+
