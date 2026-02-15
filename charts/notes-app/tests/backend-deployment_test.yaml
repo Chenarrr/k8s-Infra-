@@ -1,0 +1,43 @@
+suite: test backend deployment
+templates:
+  - backend.yaml
+tests:
+  - it: should create a Deployment
+    asserts:
+      - isKind:
+          of: Deployment
+        documentIndex: 0
+
+  - it: should have correct name
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: backend$
+        documentIndex: 0
+
+  - it: should have liveness probe
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].livenessProbe
+        documentIndex: 0
+
+  - it: should have readiness probe
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].readinessProbe
+        documentIndex: 0
+
+  - it: should have resource limits
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].resources.limits
+        documentIndex: 0
+
+  - it: should have MongoDB URI env var
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGODB_URI
+            value: mongodb://mongodb-0.mongodb-service:27017/notes-app
+        documentIndex: 0

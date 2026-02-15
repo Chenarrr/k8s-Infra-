@@ -1,0 +1,50 @@
+suite: test services
+templates:
+  - backend.yaml
+  - frontend.yaml
+  - mongodb.yaml
+tests:
+  - it: backend service should be ClusterIP
+    template: backend.yaml
+    asserts:
+      - isKind:
+          of: Service
+        documentIndex: 1
+      - equal:
+          path: spec.type
+          value: ClusterIP
+        documentIndex: 1
+      - equal:
+          path: spec.ports[0].port
+          value: 5000
+        documentIndex: 1
+
+  - it: frontend service should be ClusterIP
+    template: frontend.yaml
+    asserts:
+      - isKind:
+          of: Service
+        documentIndex: 1
+      - equal:
+          path: spec.type
+          value: ClusterIP
+        documentIndex: 1
+      - equal:
+          path: spec.ports[0].port
+          value: 80
+        documentIndex: 1
+
+  - it: mongodb service should be headless
+    template: mongodb.yaml
+    asserts:
+      - isKind:
+          of: Service
+        documentIndex: 2
+      - equal:
+          path: spec.clusterIP
+          value: None
+        documentIndex: 2
+      - equal:
+          path: spec.ports[0].port
+          value: 27017
+        documentIndex: 2

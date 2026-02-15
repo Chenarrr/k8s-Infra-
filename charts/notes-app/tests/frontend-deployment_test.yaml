@@ -1,0 +1,34 @@
+suite: test frontend deployment
+templates:
+  - frontend.yaml
+tests:
+  - it: should create a Deployment
+    asserts:
+      - isKind:
+          of: Deployment
+        documentIndex: 0
+
+  - it: should have correct name
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: frontend$
+        documentIndex: 0
+
+  - it: should have liveness probe
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].livenessProbe
+        documentIndex: 0
+
+  - it: should have readiness probe
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].readinessProbe
+        documentIndex: 0
+
+  - it: should have resource limits
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].resources.limits
+        documentIndex: 0

@@ -1,0 +1,37 @@
+suite: test mongodb statefulset
+templates:
+  - mongodb.yaml
+tests:
+  - it: should create a StatefulSet
+    asserts:
+      - isKind:
+          of: StatefulSet
+        documentIndex: 3
+
+  - it: should have correct name
+    asserts:
+      - matchRegex:
+          path: metadata.name
+          pattern: mongodb$
+        documentIndex: 3
+
+  - it: should have service name set
+    asserts:
+      - isNotEmpty:
+          path: spec.serviceName
+        documentIndex: 3
+
+  - it: should have MongoDB port
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            containerPort: 27017
+            name: mongodb
+        documentIndex: 3
+
+  - it: should have resource limits
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].resources.limits
+        documentIndex: 3
