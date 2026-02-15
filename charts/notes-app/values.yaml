@@ -14,7 +14,7 @@ backend:
     type: ClusterIP
     port: 5000
   env:
-    mongodbUri: mongodb://mongodb-service:27017/notes-app
+    mongodbUri: mongodb://mongodb-0.mongodb-service:27017/notes-app
     nodeEnv: production
   podSecurityContext:
     runAsNonRoot: true
