@@ -4,16 +4,16 @@ kind: Deployment
 metadata:
   name: {{ .Values.frontend.name }}
   labels:
-{{ toYaml .Values.frontend.labels | indent 4 }}
+    {{- include "notes-app.frontend.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.frontend.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ index .Values.frontend.labels "app.kubernetes.io/name" }}
+      {{- include "notes-app.frontend.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-{{ toYaml .Values.frontend.labels | indent 8 }}
+        {{- include "notes-app.frontend.labels" . | nindent 8 }}
     spec:
       containers:
         - name: {{ .Values.frontend.name }}
@@ -36,20 +36,20 @@ spec:
             periodSeconds: {{ .Values.frontend.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.frontend.livenessProbe.timeoutSeconds }}
           securityContext:
-{{ toYaml .Values.frontend.securityContext | indent 12 }}
+            {{- toYaml .Values.frontend.securityContext | nindent 12 }}
           resources:
-{{ toYaml .Values.frontend.resources | indent 12 }}
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.frontend.name }}
   labels:
-{{ toYaml .Values.frontend.labels | indent 4 }}
+    {{- include "notes-app.frontend.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.frontend.service.type }}
   selector:
-    app.kubernetes.io/name: {{ index .Values.frontend.labels "app.kubernetes.io/name" }}
+    {{- include "notes-app.frontend.selectorLabels" . | nindent 4 }}
   ports:
     - port: {{ .Values.frontend.service.port }}
       targetPort: {{ .Values.frontend.containerPort }}

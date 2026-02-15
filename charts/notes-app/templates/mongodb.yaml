@@ -4,7 +4,7 @@ kind: PersistentVolume
 metadata:
   name: mongodb-pv
   labels:
-{{ toYaml .Values.mongodb.labels | indent 4 }}
+    {{- include "notes-app.mongodb.labels" . | nindent 4 }}
 spec:
   storageClassName: {{ .Values.mongodb.storage.storageClassName }}
   capacity:
@@ -20,7 +20,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: mongodb-pvc
   labels:
-{{ toYaml .Values.mongodb.labels | indent 4 }}
+    {{- include "notes-app.mongodb.labels" . | nindent 4 }}
 spec:
   storageClassName: {{ .Values.mongodb.storage.storageClassName }}
   accessModes:
@@ -34,11 +34,11 @@ kind: Service
 metadata:
   name: {{ .Values.mongodb.serviceName }}
   labels:
-{{ toYaml .Values.mongodb.labels | indent 4 }}
+    {{- include "notes-app.mongodb.labels" . | nindent 4 }}
 spec:
   clusterIP: None
   selector:
-    app.kubernetes.io/name: {{ index .Values.mongodb.labels "app.kubernetes.io/name" }}
+    {{- include "notes-app.mongodb.selectorLabels" . | nindent 4 }}
   ports:
     - port: {{ .Values.mongodb.containerPort }}
       targetPort: {{ .Values.mongodb.containerPort }}
@@ -49,17 +49,17 @@ kind: StatefulSet
 metadata:
   name: {{ .Values.mongodb.name }}
   labels:
-{{ toYaml .Values.mongodb.labels | indent 4 }}
+    {{- include "notes-app.mongodb.labels" . | nindent 4 }}
 spec:
   serviceName: {{ .Values.mongodb.serviceName }}
   replicas: {{ .Values.mongodb.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ index .Values.mongodb.labels "app.kubernetes.io/name" }}
+      {{- include "notes-app.mongodb.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-{{ toYaml .Values.mongodb.labels | indent 8 }}
+        {{- include "notes-app.mongodb.labels" . | nindent 8 }}
     spec:
       containers:
         - name: {{ .Values.mongodb.name }}
@@ -89,7 +89,7 @@ spec:
             periodSeconds: {{ .Values.mongodb.livenessProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.mongodb.livenessProbe.timeoutSeconds }}
           resources:
-{{ toYaml .Values.mongodb.resources | indent 12 }}
+            {{- toYaml .Values.mongodb.resources | nindent 12 }}
       volumes:
         - name: mongodb-storage
           persistentVolumeClaim:

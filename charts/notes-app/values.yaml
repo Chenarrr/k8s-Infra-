@@ -4,10 +4,6 @@ fullnameOverride: notes-app
 backend:
   enabled: true
   name: backend
-  labels:
-    app.kubernetes.io/name: backend
-    app.kubernetes.io/component: api
-    app.kubernetes.io/part-of: notes-app
   replicaCount: 1
   image:
     repository: chenarrr/devops
@@ -48,10 +44,6 @@ backend:
 frontend:
   enabled: true
   name: frontend
-  labels:
-    app.kubernetes.io/name: frontend
-    app.kubernetes.io/component: web
-    app.kubernetes.io/part-of: notes-app
   replicaCount: 1
   image:
     repository: chenarrr/devops
@@ -85,10 +77,6 @@ mongodb:
   enabled: true
   name: mongodb
   serviceName: mongodb-service
-  labels:
-    app.kubernetes.io/name: mongodb
-    app.kubernetes.io/component: database
-    app.kubernetes.io/part-of: notes-app
   replicaCount: 1
   image:
     repository: mongo
@@ -117,8 +105,6 @@ mongodb:
 ingress:
   enabled: true
   name: notes-app-ingress
-  labels:
-    app.kubernetes.io/part-of: notes-app
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: 10m
   className: nginx

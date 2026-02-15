@@ -4,9 +4,9 @@ kind: Ingress
 metadata:
   name: {{ .Values.ingress.name }}
   labels:
-{{ toYaml .Values.ingress.labels | indent 4 }}
+    {{- include "notes-app.ingress.labels" . | nindent 4 }}
   annotations:
-{{ toYaml .Values.ingress.annotations | indent 4 }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
