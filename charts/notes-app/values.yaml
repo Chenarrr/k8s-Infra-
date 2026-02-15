@@ -35,7 +35,7 @@ backend:
     initialDelaySeconds: 5
     periodSeconds: 10
     timeoutSeconds: 3
-  livenessProbe:
+  livinessProbe:
     path: /api/notes
     initialDelaySeconds: 15
     periodSeconds: 30
@@ -67,7 +67,7 @@ frontend:
     initialDelaySeconds: 5
     periodSeconds: 10
     timeoutSeconds: 3
-  livenessProbe:
+  livinessProbe:
     path: /
     initialDelaySeconds: 10
     periodSeconds: 30
@@ -88,16 +88,16 @@ mongodb:
     hostPath: /mnt/data/mongodb
   resources:
     requests:
-      memory: 256Mi
-      cpu: 250m
+      memory: 128Mi
+      cpu: 100m
     limits:
-      memory: 512Mi
-      cpu: 500m
+      memory: 256Mi
+      cpu: 200m
   readinessProbe:
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 5
-  livenessProbe:
+  livinessProbe:
     initialDelaySeconds: 30
     periodSeconds: 30
     timeoutSeconds: 5
