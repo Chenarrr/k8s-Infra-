@@ -40,7 +40,6 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 
 {{- define "notes-app.backend.selectorLabels" -}}
 app.kubernetes.io/name: {{ .Values.backend.name }}
-app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "notes-app.backend.labels" -}}
@@ -53,7 +52,6 @@ app.kubernetes.io/component: api
 
 {{- define "notes-app.frontend.selectorLabels" -}}
 app.kubernetes.io/name: {{ .Values.frontend.name }}
-app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "notes-app.frontend.labels" -}}
@@ -66,7 +64,6 @@ app.kubernetes.io/component: web
 
 {{- define "notes-app.mongodb.selectorLabels" -}}
 app.kubernetes.io/name: {{ .Values.mongodb.name }}
-app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
 {{- define "notes-app.mongodb.labels" -}}
