@@ -24,8 +24,8 @@ spec:
             - sh
             - -c
             - |
-              until nc -z {{ .Values.mongodb.serviceName }} {{ .Values.mongodb.containerPort }}; do
-                echo "Waiting for MongoDB at {{ .Values.mongodb.serviceName }}:{{ .Values.mongodb.containerPort }}..."
+              until nc -z mongodb-0.{{ .Values.mongodb.serviceName }} {{ .Values.mongodb.containerPort }}; do
+                echo "Waiting for MongoDB at mongodb-0.{{ .Values.mongodb.serviceName }}:{{ .Values.mongodb.containerPort }}..."
                 sleep 5
               done
               echo "MongoDB is ready!"
