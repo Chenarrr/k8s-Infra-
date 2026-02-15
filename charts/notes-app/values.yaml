@@ -35,7 +35,7 @@ backend:
     initialDelaySeconds: 30
     periodSeconds: 10
     timeoutSeconds: 3
-  livinessProbe:
+  livenessProbe:
     path: /api/notes
     initialDelaySeconds: 15
     periodSeconds: 30
@@ -67,7 +67,7 @@ frontend:
     initialDelaySeconds: 5
     periodSeconds: 10
     timeoutSeconds: 3
-  livinessProbe:
+  livenessProbe:
     path: /
     initialDelaySeconds: 10
     periodSeconds: 30
@@ -97,7 +97,7 @@ mongodb:
     initialDelaySeconds: 10
     periodSeconds: 10
     timeoutSeconds: 5
-  livinessProbe:
+  livenessProbe:
     initialDelaySeconds: 30
     periodSeconds: 30
     timeoutSeconds: 5
