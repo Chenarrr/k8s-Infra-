@@ -32,7 +32,7 @@ backend:
       cpu: 200m
   readinessProbe:
     path: /api/notes
-    initialDelaySeconds: 5
+    initialDelaySeconds: 30
     periodSeconds: 10
     timeoutSeconds: 3
   livinessProbe:
