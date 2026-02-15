@@ -47,9 +47,7 @@ k8s-Infra-/
 +-- charts/
 |   +-- notes-app/                    <- Helm chart
 |       +-- Chart.yaml                <- Chart metadata (v0.1.0)
-|       +-- values.yaml               <- Base values (all defaults)
-|       +-- values-dev.yaml           <- Dev overrides (lower resources)
-|       +-- values-prod.yaml          <- Prod overrides (image tags)
+|       +-- values.yaml               <- All configuration values
 |       +-- templates/
 |           +-- _helpers.tpl          <- Template helpers
 |           +-- backend.yaml          <- Backend Deployment + Service
@@ -70,18 +68,15 @@ k8s-Infra-/
 
 ## Helm Chart Configuration
 
-The app is deployed via a Helm chart at `charts/notes-app/`. Values are layered:
-
-**Production** (what Flux uses): `values.yaml` + `values-prod.yaml`
-**Development**: `values.yaml` + `values-dev.yaml`
+The app is deployed via a Helm chart at `charts/notes-app/` using a single `values.yaml`.
 
 ### Key Values
 
-| Setting | Production | Development |
-|---------|-----------|-------------|
-| Backend image | `chenarrr/devops:backend-<sha>` | `chenarrr/devops:backend-dev` |
-| Frontend image | `chenarrr/devops:frontend-<sha>` | `chenarrr/devops:frontend-dev` |
-| MongoDB image | `mongo:8` | `mongo:8` |
+| Setting | Value |
+|---------|-------|
+| Backend image | `chenarrr/devops:backend-<sha>` |
+| Frontend image | `chenarrr/devops:frontend-<sha>` |
+| MongoDB image | `mongo:8` |
 | Backend CPU | 100m-200m | 50m-100m |
 | Backend memory | 128Mi-256Mi | 64Mi-128Mi |
 | Frontend CPU | 100m-200m | 50m-100m |
