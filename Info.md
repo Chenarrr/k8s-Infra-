@@ -75,10 +75,146 @@ Flux CD (GitOps)
 
 ---
 
+## Helm Chart Testing Infrastructure 🧪
+
+This project includes a comprehensive testing infrastructure for the Helm chart to ensure quality and prevent deployment issues.
+
+### 🛠️ What We Built
+
+**Testing Stack:**
+- **Helm Unittest** - Unit testing for Helm templates
+- **Helm Lint** - Chart validation and best practices
+- **Helm-docs** - Auto-generated documentation
+- **GitHub Actions** - Automated testing on every push/PR
+- **Makefile** - Easy-to-use development commands
+
+### 📁 Testing Structure
+
+```
+charts/notes-app/
+├── Makefile                    # Development commands
+├── tests/                      # Test suites (19 tests total)
+│   ├── backend-deployment_test.yaml     # 6 tests for backend
+│   ├── frontend-deployment_test.yaml    # 5 tests for frontend
+│   ├── mongodb-statefulset_test.yaml    # 5 tests for MongoDB
+│   └── services_test.yaml              # 3 tests for all services
+└── .github/workflows/
+    └── helm-test.yaml          # CI/CD pipeline for chart testing
+```
+
+### 🧪 What Gets Tested
+
+**Template Validation:**
+- ✅ Correct Kubernetes resource types (Deployment, Service, StatefulSet)
+- ✅ Resource naming patterns
+- ✅ Environment variables and configuration
+- ✅ Health checks (readiness/liveness probes)
+- ✅ Resource limits and security contexts
+- ✅ Service types and port configurations
+- ✅ MongoDB StatefulSet with persistent volumes
+- ✅ Helm template helper functions
+
+**Quality Checks:**
+- ✅ Helm chart lint validation
+- ✅ YAML syntax correctness
+- ✅ Best practices compliance
+- ✅ Template rendering without errors
+
+### 🚀 How to Use
+
+**Prerequisites (one-time setup):**
+```bash
+# Install Helm unittest plugin
+helm plugin install https://github.com/helm-unittest/helm-unittest --verify=false
+
+# Install helm-docs (optional)
+brew install norwoodj/tap/helm-docs
+```
+
+**Development Commands:**
+```bash
+cd charts/notes-app
+
+# Show all available commands
+make help
+
+# Run all tests (19 tests across 4 suites)
+make test
+
+# Lint the chart
+make lint
+
+# Generate documentation
+make docs
+
+# Run everything (lint + test + docs)
+make check
+
+# Clean up generated files
+make clean
+```
+
+### 📊 Test Results Example
+
+```bash
+$ make test
+🧪 Running tests...
+
+### Chart [ notes-app ] .
+
+ PASS  test backend deployment  tests/backend-deployment_test.yaml
+ PASS  test frontend deployment tests/frontend-deployment_test.yaml
+ PASS  test mongodb statefulset tests/mongodb-statefulset_test.yaml
+ PASS  test services    tests/services_test.yaml
+
+Charts:      1 passed, 1 total
+Test Suites: 4 passed, 4 total
+Tests:       19 passed, 19 total ✅
+```
+
+### 🤖 Continuous Integration
+
+**GitHub Actions Pipeline:**
+- **Triggers:** Push to main, PRs affecting `charts/**`
+- **Steps:**
+  1. Checkout code
+  2. Setup Helm v3.14.0
+  3. Install helm-unittest plugin
+  4. Lint chart (`helm lint`)
+  5. Run tests (`helm unittest`)
+  6. Generate docs (`helm-docs`)
+
+**Benefits:**
+- 🛡️ **Quality Gate** - Prevents broken charts from being deployed
+- 🚀 **Fast Feedback** - Know immediately if changes break anything
+- 📚 **Auto Documentation** - Chart README updates automatically
+- 🔄 **Consistent Testing** - Same tests run locally and in CI
+
+### 🎯 Why This Matters
+
+**Before Testing Infrastructure:**
+- ❌ Manual chart validation
+- ❌ Deployment failures discovered late
+- ❌ No guarantee templates render correctly
+- ❌ Manual documentation maintenance
+
+**After Testing Infrastructure:**
+- ✅ **Automated validation** of all chart changes
+- ✅ **19 tests** covering critical functionality
+- ✅ **Catch issues early** before they reach production
+- ✅ **Confidence in deployments** through comprehensive testing
+- ✅ **Documentation always up-to-date**
+
+This testing infrastructure ensures that every change to the Helm chart is validated, tested, and documented automatically — maintaining the same high standards as the application code itself.
+
+---
+
 ## Repo Structure
 
 ```
 k8s-Infra-/
++-- .github/workflows/
+|   +-- helm-test.yaml               <- CI/CD pipeline for Helm chart testing
 +-- app/
 |   +-- namespace.yaml                <- notes-app namespace
 |   +-- notes-app-helmrelease.yaml    <- Flux HelmRelease (deploys the chart)
@@ -87,13 +223,18 @@ k8s-Infra-/
 |   +-- notes-app/                    <- Helm chart (best-practice structure)
 |       +-- Chart.yaml                <- Chart metadata (v0.1.0)
 |       +-- values.yaml               <- Single source of truth for all config
+|       +-- Makefile                  <- Development commands (lint/test/docs)
 |       +-- templates/
-|           +-- _helpers.tpl          <- Standard label/selector helpers
-|           +-- backend.yaml          <- Backend Deployment + Service
-|           +-- frontend.yaml         <- Frontend Deployment + Service
-|           +-- mongodb.yaml          <- MongoDB StatefulSet + PV/PVC + Service
-|           +-- ingress.yaml          <- NGINX Ingress
-|           +-- NOTES.txt             <- Post-install instructions
+|       |   +-- _helpers.tpl          <- Standard label/selector helpers
+|       |   +-- backend.yaml          <- Backend Deployment + Service
+|       |   +-- frontend.yaml         <- Frontend Deployment + Service
+|       |   +-- mongodb.yaml          <- MongoDB StatefulSet + PV/PVC + Service
+|       |   +-- ingress.yaml          <- NGINX Ingress
+|       +-- tests/                    <- Helm chart test suites (19 tests)
+|           +-- backend-deployment_test.yaml    <- 6 tests for backend
+|           +-- frontend-deployment_test.yaml   <- 5 tests for frontend
+|           +-- mongodb-statefulset_test.yaml   <- 5 tests for MongoDB
+|           +-- services_test.yaml             <- 3 tests for services
 +-- clusters/
 |   +-- notes-app.yaml               <- Flux Kustomization pointing to ./app
 +-- flux-system/                      <- Auto-generated by Flux (don't edit)
