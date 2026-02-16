@@ -25,11 +25,11 @@ backend:
     readOnlyRootFilesystem: false
   resources:
     requests:
-      memory: 192Mi
-      cpu: 150m
+      memory: 128Mi
+      cpu: 100m
     limits:
-      memory: 384Mi
-      cpu: 300m
+      memory: 256Mi
+      cpu: 200m
   readinessProbe:
     path: /api/notes
     initialDelaySeconds: 30
@@ -88,11 +88,11 @@ mongodb:
     hostPath: /mnt/data/mongodb
   resources:
     requests:
-      memory: 384Mi
-      cpu: 150m
+      memory: 256Mi
+      cpu: 100m
     limits:
-      memory: 768Mi
-      cpu: 300m
+      memory: 512Mi
+      cpu: 200m
   readinessProbe:
     initialDelaySeconds: 20
     periodSeconds: 10
