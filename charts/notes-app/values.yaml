@@ -26,10 +26,10 @@ backend:
   resources:
     requests:
       memory: 128Mi
-      cpu: 100m
+      cpu: 300m
     limits:
       memory: 256Mi
-      cpu: 200m
+      cpu: 500m
   readinessProbe:
     path: /api/notes
     initialDelaySeconds: 30
@@ -89,10 +89,10 @@ mongodb:
   resources:
     requests:
       memory: 256Mi
-      cpu: 100m
+      cpu: 300m
     limits:
       memory: 512Mi
-      cpu: 200m
+      cpu: 500m
   readinessProbe:
     initialDelaySeconds: 20
     periodSeconds: 10
