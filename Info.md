@@ -785,3 +785,174 @@ sudo systemctl restart containerd
 | App Repo | https://github.com/Chenarrr/DevSecOps |
 | Infra Repo | https://github.com/Chenarrr/k8s-Infra- |
 | Docker Hub | chenarrr/devops |
+
+---
+
+## 🎯 Recent Development Work (February 2026)
+
+### 📋 What We Accomplished
+
+This section documents the comprehensive Helm chart testing infrastructure and tooling improvements implemented to ensure production-ready deployments.
+
+### 🧪 Complete Testing Infrastructure
+
+**Built from scratch:**
+- **19 unit tests** across 4 test suites covering all components
+- **Automated CI/CD pipeline** with GitHub Actions
+- **Documentation generation** that auto-updates from Chart.yaml and values.yaml
+- **Development workflow** with Makefile shortcuts
+- **Latest 2025-2026 tooling** for cutting-edge capabilities
+
+### 🛠️ Technical Implementation
+
+**Tools & Versions:**
+- **Helm v4.1.1** (latest February 2026 release)
+- **helm-unittest v1.0.3** (latest October 2025 release)
+- **helm-docs v1.14.2** (latest available version)
+- **actions/checkout@v6** (latest 2026 GitHub Actions)
+
+**Testing Coverage:**
+```
+Backend Deployment Tests (6 tests):
+✅ Deployment resource creation
+✅ Correct naming conventions
+✅ Health check probes (liveness/readiness)
+✅ Resource limits enforcement
+✅ Environment variables (MongoDB URI)
+✅ Security context validation
+
+Frontend Deployment Tests (5 tests):
+✅ Service configuration
+✅ Port mappings (80)
+✅ Resource constraints
+✅ Health endpoints
+✅ Container specifications
+
+MongoDB StatefulSet Tests (5 tests):
+✅ Persistent storage
+✅ StatefulSet properties
+✅ Database connectivity
+✅ Volume mounts
+✅ Service bindings
+
+Services Tests (3 tests):
+✅ ClusterIP configurations
+✅ Port definitions
+✅ Headless service (MongoDB)
+```
+
+### 🚀 Development Workflow
+
+**Makefile Commands:**
+```bash
+make help     # Show all commands
+make test     # Run 19 unit tests (helm unittest)
+make lint     # Validate chart syntax (helm lint)
+make docs     # Generate README.md (helm-docs)
+make check    # Full pipeline: lint + test + docs
+make clean    # Remove temporary files
+```
+
+**GitHub Actions Pipeline:**
+- **Triggers:** Push to main, PR changes in charts/
+- **Steps:** Checkout → Install Helm → Install plugins → Lint → Test → Generate docs
+- **Result:** 100% automated quality gates
+
+### 📚 Documentation System
+
+**Auto-Generated README:**
+- **Source:** Chart.yaml + values.yaml
+- **Output:** Comprehensive README.md with badges, values table
+- **Process:** Completely overwrites file each time
+- **Benefit:** Always up-to-date, never outdated
+
+**Key Features:**
+- Version badges (Chart v0.1.0, App v1.0.0)
+- Full configuration table (92 lines of documentation)
+- Auto-sync with actual chart values
+- No manual maintenance required
+
+### 🌟 Public Chart Repository
+
+**ArtifactHub Integration:**
+- **Repository URL:** https://chenarrr.github.io/k8s-Infra-/
+- **Chart Package:** notes-app-0.1.0.tgz
+- **Index File:** index.yaml (Helm repository format)
+- **Discovery:** Public searchable on ArtifactHub
+
+**Installation for Users:**
+```bash
+helm repo add chenar https://chenarrr.github.io/k8s-Infra-/
+helm repo update
+helm install my-notes chenar/notes-app
+```
+
+### 🔄 CI/CD Evolution
+
+**Before:**
+- Manual testing
+- No quality gates
+- Documentation drift
+- Development friction
+
+**After:**
+- 19 automated tests
+- Zero-failure deployments
+- Self-updating docs
+- 1-command workflows
+
+### 🎯 Quality Metrics
+
+**Test Results:**
+```
+Charts:      1 passed, 1 total
+Test Suites: 4 passed, 4 total  
+Tests:       19 passed, 19 total
+Time:        ~20ms (blazing fast)
+```
+
+**Success Rate:** 100% ✅
+**Coverage:** All components (backend, frontend, MongoDB, services)
+**Automation:** Full pipeline runs on every code change
+
+### 💡 Learning Outcomes
+
+**Helm Templating Mastery:**
+- Template syntax (dots, pipes, quotes, includes)
+- Values inheritance and override patterns
+- Template execution flow and debugging
+- Best practices for production charts
+
+**Testing Philosophy:**
+- Template rendering validation
+- Configuration verification
+- Security settings enforcement
+- Service discovery validation
+
+**Documentation Strategy:**
+- Single source of truth (Chart.yaml/values.yaml)
+- Automated generation prevents drift
+- Version-controlled and git-tracked
+- Public repository ready
+
+### 🏆 Production Benefits
+
+**For Developers:**
+- Catch errors before deployment
+- Fast feedback loop (20ms test runs)
+- Self-documenting infrastructure
+- Standardized workflows
+
+**For Operations:**
+- Quality gates prevent bad deployments
+- Automated testing in CI/CD
+- Version-controlled chart releases
+- Public discoverability
+
+**For Users:**
+- Professional chart repository
+- Standard installation process
+- Up-to-date documentation
+- Trusted, tested releases
+
+This infrastructure ensures that every chart deployment is tested, validated, and documented - providing production-grade reliability for the GitOps workflow.
