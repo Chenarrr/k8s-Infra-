@@ -37,9 +37,9 @@ backend:
     timeoutSeconds: 10
   livenessProbe:
     path: /api/notes
-    initialDelaySeconds: 60
-    periodSeconds: 30
-    timeoutSeconds: 10
+    initialDelaySeconds: 120
+    periodSeconds: 60
+    timeoutSeconds: 30
 
 frontend:
   enabled: true
@@ -69,9 +69,9 @@ frontend:
     timeoutSeconds: 3
   livenessProbe:
     path: /
-    initialDelaySeconds: 10
-    periodSeconds: 30
-    timeoutSeconds: 3
+    initialDelaySeconds: 30
+    periodSeconds: 60
+    timeoutSeconds: 10
 
 mongodb:
   enabled: true
@@ -94,13 +94,13 @@ mongodb:
       memory: 512Mi
       cpu: 200m
   readinessProbe:
-    initialDelaySeconds: 20
+    initialDelaySeconds: 30
     periodSeconds: 10
     timeoutSeconds: 10
   livenessProbe:
-    initialDelaySeconds: 60
-    periodSeconds: 30
-    timeoutSeconds: 10
+    initialDelaySeconds: 120
+    periodSeconds: 60
+    timeoutSeconds: 30
 
 ingress:
   enabled: true
@@ -110,4 +110,3 @@ ingress:
   className: nginx
   path: /
   pathType: Prefix
-  
