@@ -42,3 +42,5 @@ jobs:
         run: |
           make docs
           echo "Frigate documentation generated successfully"
+
+          
