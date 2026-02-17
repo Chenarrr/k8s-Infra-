@@ -36,13 +36,12 @@ jobs:
           cd charts/notes-app
           helm unittest .
 
-      - name: Install helm-docs
+      - name: Install Frigate
         run: |
-          wget https://github.com/norwoodj/helm-docs/releases/download/v1.14.2/helm-docs_1.14.2_Linux_x86_64.tar.gz
-          tar -xzf helm-docs_1.14.2_Linux_x86_64.tar.gz
-          sudo mv helm-docs /usr/local/bin/
+          pip3 install frigate
 
-      - name: Generate docs
+      - name: Generate docs with Frigate  
         run: |
-          cd charts/notes-app
-          helm-docs
+          python3 -m frigate gen charts/notes-app > chart-docs.md
+          # Update the main README with chart documentation
+          echo "Frigate documentation generated successfully"

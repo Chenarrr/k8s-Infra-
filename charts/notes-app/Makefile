@@ -16,11 +16,13 @@ lint:
 	@helm lint .
 
 docs:
-	@echo "📝 Generating docs..."
-	@helm-docs
+	@echo "📝 Generating docs with Frigate..."
+	@python3 -m frigate gen . > README.md
+	@echo "✅ Chart documentation generated in charts/notes-app/README.md"
 
 check: lint test docs
 	@echo "✅ All checks passed!"
 
 clean:
 	@rm -f *.tgz
+
