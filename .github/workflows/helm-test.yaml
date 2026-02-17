@@ -28,13 +28,11 @@ jobs:
 
       - name: Lint chart
         run: |
-          cd charts/notes-app
-          helm lint .
+          make lint
 
       - name: Run tests
         run: |
-          cd charts/notes-app
-          helm unittest .
+          make test
 
       - name: Install Frigate
         run: |
@@ -42,6 +40,5 @@ jobs:
 
       - name: Generate docs with Frigate  
         run: |
-          python3 -m frigate gen charts/notes-app > chart-docs.md
-          # Update the main README with chart documentation
+          make docs
           echo "Frigate documentation generated successfully"
