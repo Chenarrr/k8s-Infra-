@@ -31,20 +31,20 @@
 <details>
 <summary>Table of Contents</summary>
 
-- [Table of Contents](#-table-of-contents)
-- [Overview](#-overview)
-- [Features](#-features)
-- [Project Structure](#-project-structure)
-    - [Project Index](#-project-index)
-- [Getting Started](#-getting-started)
-    - [Prerequisites](#-prerequisites)
-    - [ Installation](#-installation)
-    - [Usage](#-usage)
-    - [Testing](#-testing)
-- [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Acknowledgments](#-acknowledgments)
+- [Table of Contents](#table-of-contents)
+- [Overview](#overview)
+- [Features](#features)
+- [Project Structure](#project-structure)
+    - [Project Index](#project-index)
+- [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+    - [Usage](#usage)
+    - [Testing](#testing)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
 </details>
 
@@ -349,19 +349,31 @@ Build k8s-Infra- from the source and intsall dependencies:
 
 3. **Install the dependencies:**
 
-echo 'INSERT-INSTALL-COMMAND-HERE'
+    ```sh
+    ❯ helm dependency update charts/notes-app
+    ```
 
 ### Usage
 
-Run the project with:
+Deploy the Helm chart with:
 
-echo 'INSERT-RUN-COMMAND-HERE'
+    ```sh
+    ❯ helm install notes-app charts/notes-app
+    ```
+
+Or apply via Flux:
+
+    ```sh
+    ❯ kubectl apply -k app/
+    ```
 
 ### Testing
 
-K8s-infra- uses the {__test_framework__} test framework. Run the test suite with:
+K8s-Infra- uses the **helm-unittest** test framework. Run the test suite with:
 
-echo 'INSERT-TEST-COMMAND-HERE'
+    ```sh
+    ❯ make test
+    ```
 
 ---
 
