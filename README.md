@@ -379,9 +379,11 @@ K8s-Infra- uses the **helm-unittest** test framework. Run the test suite with:
 
 ## Roadmap
 
-- [X] **`Task 1`**: <strike>Implement feature one.</strike>
-- [ ] **`Task 2`**: Implement feature two.
-- [ ] **`Task 3`**: Implement feature three.
+- [X] **`Helm Chart`**: <strike>Create Notes App Helm chart with frontend, backend, and MongoDB.</strike>
+- [X] **`CI Pipeline`**: <strike>Set up GitHub Actions for lint and unit tests.</strike>
+- [X] **`Flux GitOps`**: <strike>Configure Flux CD for automated deployments.</strike>
+- [ ] **`Monitoring`**: Add Prometheus and Grafana observability stack.
+- [ ] **`TLS`**: Enable TLS termination on the Ingress.
 
 ---
 
@@ -430,13 +432,16 @@ K8s-Infra- uses the **helm-unittest** test framework. Run the test suite with:
 
 ## License
 
-K8s-infra- is protected under the [LICENSE](https://choosealicense.com/licenses) License. For more details, refer to the [LICENSE](https://choosealicense.com/licenses/) file.
+This project is distributed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## Acknowledgments
 
-- Credit `contributors`, `inspiration`, `references`, etc.
+- [Flux CD](https://fluxcd.io/) for GitOps continuous delivery.
+- [Helm](https://helm.sh/) for Kubernetes package management.
+- [helm-unittest](https://github.com/helm-unittest/helm-unittest) for chart testing.
+- [readmeai](https://github.com/eli64s/readme-ai) for README generation.
 
 <div align="right">
 
