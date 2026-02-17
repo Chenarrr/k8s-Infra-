@@ -7,7 +7,7 @@ backend:
   replicaCount: 1
   image:
     repository: chenarrr/devops
-    tag: backend-8193810
+    tag: backend-f1035a9
     pullPolicy: Always
   containerPort: 5000
   service:
@@ -47,7 +47,7 @@ frontend:
   replicaCount: 1
   image:
     repository: chenarrr/devops
-    tag: frontend-8193810
+    tag: frontend-f1035a9
     pullPolicy: Always
   containerPort: 80
   service:
