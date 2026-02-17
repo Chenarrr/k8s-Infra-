@@ -16,8 +16,8 @@ lint:
 	@cd charts/notes-app && helm lint .
 
 docs:
-	@echo "📝 Generating docs with Frigate..."
-	@cd charts/notes-app && python3 -m frigate gen . > ../../README.md
+	@echo "📝 Generating docs with readmeai..."
+	@readmeai --repository https://github.com/Chenarrr/k8s-Infra- --api ollama --model llama3.2 --output README.md
 	@echo "✅ Documentation generated in README.md"
 
 check: lint test docs

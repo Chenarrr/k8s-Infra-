@@ -34,13 +34,12 @@ jobs:
         run: |
           make test
 
-      - name: Install Frigate
+      - name: Install readmeai
         run: |
-          pip3 install frigate
+          pip3 install readmeai
 
-      - name: Generate docs with Frigate  
+      - name: Generate docs with readmeai
         run: |
           make docs
-          echo "Frigate documentation generated successfully"
+          echo "readmeai documentation generated successfully"
 
-          
