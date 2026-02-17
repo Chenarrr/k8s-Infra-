@@ -9,20 +9,19 @@ help:
 
 test:
 	@echo "🧪 Running tests..."
-	@helm unittest .
+	@cd charts/notes-app && helm unittest .
 
 lint:
 	@echo "🔍 Linting chart..."
-	@helm lint .
+	@cd charts/notes-app && helm lint .
 
 docs:
 	@echo "📝 Generating docs with Frigate..."
-	@python3 -m frigate gen . > README.md
-	@echo "✅ Chart documentation generated in charts/notes-app/README.md"
+	@cd charts/notes-app && python3 -m frigate gen . > ../../README.md
+	@echo "✅ Documentation generated in README.md"
 
 check: lint test docs
 	@echo "✅ All checks passed!"
 
 clean:
-	@rm -f *.tgz
-
+	@cd charts/notes-app && rm -f *.tgz
