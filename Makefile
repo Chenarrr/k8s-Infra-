@@ -16,8 +16,8 @@ lint:
 	@cd charts/notes-app && helm lint .
 
 docs:
-	@echo "📝 Generating docs with readmeai..."
-	@readmeai --repository https://github.com/Chenarrr/k8s-Infra- --api ollama --model llama3.2 --output README.md
+	@echo "📝 Generating docs with helm-docs..."
+	@cd charts/notes-app && helm-docs --output-file ../../README.md
 	@echo "✅ Documentation generated in README.md"
 
 check: lint test docs

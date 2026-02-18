@@ -1,28 +1,48 @@
+# -- Override the chart name
 nameOverride: ""
+# -- Override the full release name
 fullnameOverride: notes-app
 
+# -- Backend API server configuration
 backend:
+  # -- Enable backend deployment
   enabled: true
+  # -- Backend component name
   name: backend
+  # -- Number of backend replicas
   replicaCount: 1
+  # -- Backend container image settings
   image:
+    # -- Image repository
     repository: chenarrr/devops
+    # -- Image tag
     tag: backend-a725016
+    # -- Image pull policy
     pullPolicy: Always
+  # -- Backend container port
   containerPort: 5000
+  # -- Backend service configuration
   service:
+    # -- Service type
     type: ClusterIP
+    # -- Service port
     port: 5000
+  # -- Backend environment variables
   env:
+    # -- MongoDB connection URI
     mongodbUri: mongodb://mongodb-0.mongodb-service:27017/notes-app
+    # -- Node environment
     nodeEnv: production
+  # -- Pod-level security context
   podSecurityContext:
     runAsNonRoot: true
     runAsUser: 1000
     fsGroup: 1000
+  # -- Container-level security context
   securityContext:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: false
+  # -- Backend resource requests and limits
   resources:
     requests:
       memory: 128Mi
@@ -30,29 +50,44 @@ backend:
     limits:
       memory: 256Mi
       cpu: 200m
+  # -- Backend readiness probe
   readinessProbe:
     path: /api/notes
     initialDelaySeconds: 30
     periodSeconds: 10
     timeoutSeconds: 10
+  # -- Backend liveness probe
   livenessProbe:
     path: /api/notes
     initialDelaySeconds: 120
     periodSeconds: 60
     timeoutSeconds: 30
 
+# -- Frontend web server configuration
 frontend:
+  # -- Enable frontend deployment
   enabled: true
+  # -- Frontend component name
   name: frontend
+  # -- Number of frontend replicas
   replicaCount: 1
+  # -- Frontend container image settings
   image:
+    # -- Image repository
     repository: chenarrr/devops
+    # -- Image tag
     tag: frontend-a725016
+    # -- Image pull policy
     pullPolicy: Always
+  # -- Frontend container port
   containerPort: 80
+  # -- Frontend service configuration
   service:
+    # -- Service type
     type: ClusterIP
+    # -- Service port
     port: 80
+  # -- Frontend resource requests and limits
   resources:
     requests:
       memory: 64Mi
@@ -60,32 +95,49 @@ frontend:
     limits:
       memory: 128Mi
       cpu: 100m
+  # -- Container-level security context
   securityContext:
     allowPrivilegeEscalation: false
+  # -- Frontend readiness probe
   readinessProbe:
     path: /
     initialDelaySeconds: 5
     periodSeconds: 10
     timeoutSeconds: 3
+  # -- Frontend liveness probe
   livenessProbe:
     path: /
     initialDelaySeconds: 30
     periodSeconds: 60
     timeoutSeconds: 10
 
+# -- MongoDB database configuration
 mongodb:
+  # -- Enable MongoDB StatefulSet
   enabled: true
+  # -- MongoDB component name
   name: mongodb
+  # -- Headless service name for StatefulSet DNS
   serviceName: mongodb-service
+  # -- Number of MongoDB replicas
   replicaCount: 1
+  # -- MongoDB container image settings
   image:
+    # -- Image repository
     repository: mongo
+    # -- Image tag
     tag: "8"
+  # -- MongoDB container port
   containerPort: 27017
+  # -- Persistent storage configuration
   storage:
+    # -- Storage class name
     storageClassName: manual
+    # -- Volume size
     size: 5Gi
+    # -- Host path for local storage
     hostPath: /mnt/data/mongodb
+  # -- MongoDB resource requests and limits
   resources:
     requests:
       memory: 256Mi
@@ -93,20 +145,28 @@ mongodb:
     limits:
       memory: 512Mi
       cpu: 200m
+  # -- MongoDB readiness probe
   readinessProbe:
     initialDelaySeconds: 30
     periodSeconds: 10
     timeoutSeconds: 10
+  # -- MongoDB liveness probe
   livenessProbe:
     initialDelaySeconds: 120
     periodSeconds: 60
     timeoutSeconds: 30
 
+# -- Ingress configuration
 ingress:
+  # -- Enable Ingress resource
   enabled: true
+  # -- Ingress resource name
   name: notes-app-ingress
+  # -- Ingress annotations
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: 10m
+  # -- Ingress class name
   className: nginx
+  # -- Ingress path
   path: /
   pathType: Prefix

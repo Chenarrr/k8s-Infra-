@@ -34,12 +34,12 @@ jobs:
         run: |
           make test
 
-      - name: Install readmeai
+      - name: Install helm-docs
         run: |
-          pip3 install readmeai
+          GO111MODULE=on go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest
 
-      - name: Generate docs with readmeai
+      - name: Generate docs with helm-docs
         run: |
           make docs
-          echo "readmeai documentation generated successfully"
+          echo "helm-docs documentation generated successfully"
 
