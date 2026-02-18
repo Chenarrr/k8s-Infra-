@@ -1,6 +1,4 @@
 ## @section Common parameters
-## @param nameOverride Override the chart name.
-nameOverride: ""
 ## @param fullnameOverride Override the full release name.
 fullnameOverride: notes-app
 
@@ -83,7 +81,6 @@ frontend:
   name: frontend
   ## @param frontend.replicaCount Number of frontend replicas.
   replicaCount: 1
-  ## @extra frontend.image Frontend container image settings.
   image:
     ## @param frontend.image.repository Image repository.
     repository: chenarrr/devops
@@ -93,31 +90,25 @@ frontend:
     pullPolicy: Always
   ## @param frontend.containerPort Frontend container port.
   containerPort: 80
-  ## @extra frontend.service Frontend service configuration.
   service:
     ## @param frontend.service.type Service type.
     type: ClusterIP
     ## @param frontend.service.port Service port.
     port: 80
-  ## @extra frontend.resources Frontend resource requests and limits.
   resources:
-    ## @extra frontend.resources.requests Frontend resource requests.
     requests:
       ## @param frontend.resources.requests.memory Requested memory.
       memory: 64Mi
       ## @param frontend.resources.requests.cpu Requested CPU.
       cpu: 50m
-    ## @extra frontend.resources.limits Frontend resource limits.
     limits:
       ## @param frontend.resources.limits.memory Memory limit.
       memory: 128Mi
       ## @param frontend.resources.limits.cpu CPU limit.
       cpu: 100m
-  ## @extra frontend.securityContext Container-level security context.
   securityContext:
     ## @param frontend.securityContext.allowPrivilegeEscalation Allow privilege escalation.
     allowPrivilegeEscalation: false
-  ## @extra frontend.readinessProbe Frontend readiness probe settings.
   readinessProbe:
     ## @param frontend.readinessProbe.path Readiness endpoint path.
     path: /
@@ -127,7 +118,6 @@ frontend:
     periodSeconds: 10
     ## @param frontend.readinessProbe.timeoutSeconds Readiness check timeout.
     timeoutSeconds: 3
-  ## @extra frontend.livenessProbe Frontend liveness probe settings.
   livenessProbe:
     ## @param frontend.livenessProbe.path Liveness endpoint path.
     path: /
@@ -148,7 +138,6 @@ mongodb:
   serviceName: mongodb-service
   ## @param mongodb.replicaCount Number of MongoDB replicas.
   replicaCount: 1
-  ## @extra mongodb.image MongoDB container image settings.
   image:
     ## @param mongodb.image.repository Image repository.
     repository: mongo
@@ -156,7 +145,6 @@ mongodb:
     tag: "8"
   ## @param mongodb.containerPort MongoDB container port.
   containerPort: 27017
-  ## @extra mongodb.storage Persistent storage configuration.
   storage:
     ## @param mongodb.storage.storageClassName Storage class name.
     storageClassName: manual
@@ -164,21 +152,17 @@ mongodb:
     size: 5Gi
     ## @param mongodb.storage.hostPath Host path for local storage.
     hostPath: /mnt/data/mongodb
-  ## @extra mongodb.resources MongoDB resource requests and limits.
   resources:
-    ## @extra mongodb.resources.requests MongoDB resource requests.
     requests:
       ## @param mongodb.resources.requests.memory Requested memory.
       memory: 256Mi
       ## @param mongodb.resources.requests.cpu Requested CPU.
       cpu: 100m
-    ## @extra mongodb.resources.limits MongoDB resource limits.
     limits:
       ## @param mongodb.resources.limits.memory Memory limit.
       memory: 512Mi
       ## @param mongodb.resources.limits.cpu CPU limit.
       cpu: 200m
-  ## @extra mongodb.readinessProbe MongoDB readiness probe settings.
   readinessProbe:
     ## @param mongodb.readinessProbe.initialDelaySeconds Initial delay before readiness checks.
     initialDelaySeconds: 30
@@ -186,7 +170,6 @@ mongodb:
     periodSeconds: 10
     ## @param mongodb.readinessProbe.timeoutSeconds Readiness check timeout.
     timeoutSeconds: 10
-  ## @extra mongodb.livenessProbe MongoDB liveness probe settings.
   livenessProbe:
     ## @param mongodb.livenessProbe.initialDelaySeconds Initial delay before liveness checks.
     initialDelaySeconds: 120
@@ -201,8 +184,8 @@ ingress:
   enabled: true
   ## @param ingress.name Ingress resource name.
   name: notes-app-ingress
-  ## @skip ingress.annotations Ingress annotations.
   annotations:
+    ## @param ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size Set max body size for NGINX ingress.
     nginx.ingress.kubernetes.io/proxy-body-size: 10m
   ## @param ingress.className Ingress class name.
   className: nginx

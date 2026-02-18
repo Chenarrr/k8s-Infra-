@@ -20,7 +20,6 @@ Full stack notes app chart managed by Flux
 | `backend.enabled`                                  | Enable backend deployment.             | `true`                                                |
 | `backend.name`                                     | Backend component name.                | `backend`                                             |
 | `backend.replicaCount`                             | Number of backend replicas.            | `1`                                                   |
-| `backend.image`                                    | Backend container image settings.      |                                                       |
 | `backend.image.repository`                         | Image repository.                      | `chenarrr/devops`                                     |
 | `backend.image.tag`                                | Image tag.                             | `backend-a725016`                                     |
 | `backend.image.pullPolicy`                         | Image pull policy.                     | `Always`                                              |
@@ -28,29 +27,22 @@ Full stack notes app chart managed by Flux
 | `backend.service`                                  | Backend service configuration.         |                                                       |
 | `backend.service.type`                             | Service type.                          | `ClusterIP`                                           |
 | `backend.service.port`                             | Service port.                          | `5000`                                                |
-| `backend.env`                                      | Backend environment variables.         |                                                       |
 | `backend.env.mongodbUri`                           | MongoDB connection URI.                | `mongodb://mongodb-0.mongodb-service:27017/notes-app` |
 | `backend.env.nodeEnv`                              | Node environment.                      | `production`                                          |
-| `backend.podSecurityContext`                       | Pod-level security context.            |                                                       |
 | `backend.podSecurityContext.runAsNonRoot`          | Run as non-root user.                  | `true`                                                |
 | `backend.podSecurityContext.runAsUser`             | User ID for the container process.     | `1000`                                                |
 | `backend.podSecurityContext.fsGroup`               | File system group ID.                  | `1000`                                                |
-| `backend.securityContext`                          | Container-level security context.      |                                                       |
 | `backend.securityContext.allowPrivilegeEscalation` | Allow privilege escalation.            | `false`                                               |
 | `backend.securityContext.readOnlyRootFilesystem`   | Mount root filesystem as read-only.    | `false`                                               |
-| `backend.resources`                                | Backend resource requests and limits.  |                                                       |
-| `backend.resources.requests`                       | Backend resource requests.             |                                                       |
 | `backend.resources.requests.memory`                | Requested memory.                      | `128Mi`                                               |
 | `backend.resources.requests.cpu`                   | Requested CPU.                         | `100m`                                                |
 | `backend.resources.limits`                         | Backend resource limits.               |                                                       |
 | `backend.resources.limits.memory`                  | Memory limit.                          | `256Mi`                                               |
 | `backend.resources.limits.cpu`                     | CPU limit.                             | `200m`                                                |
-| `backend.readinessProbe`                           | Backend readiness probe settings.      |                                                       |
 | `backend.readinessProbe.path`                      | Readiness endpoint path.               | `/api/notes`                                          |
 | `backend.readinessProbe.initialDelaySeconds`       | Initial delay before readiness checks. | `30`                                                  |
 | `backend.readinessProbe.periodSeconds`             | Readiness check interval.              | `10`                                                  |
 | `backend.readinessProbe.timeoutSeconds`            | Readiness check timeout.               | `10`                                                  |
-| `backend.livenessProbe`                            | Backend liveness probe settings.       |                                                       |
 | `backend.livenessProbe.path`                       | Liveness endpoint path.                | `/api/notes`                                          |
 | `backend.livenessProbe.initialDelaySeconds`        | Initial delay before liveness checks.  | `120`                                                 |
 | `backend.livenessProbe.periodSeconds`              | Liveness check interval.               | `60`                                                  |
