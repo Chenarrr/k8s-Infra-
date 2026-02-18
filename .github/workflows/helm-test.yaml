@@ -37,6 +37,7 @@ jobs:
       - name: Install helm-docs
         run: |
           GO111MODULE=on go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
 
       - name: Generate docs with helm-docs
         run: |
