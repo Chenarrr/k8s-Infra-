@@ -1,5 +1,4 @@
 ## @section Common parameters
-## @param nameOverride Override the chart name.
 nameOverride: ""
 ## @param fullnameOverride Override the full release name.
 fullnameOverride: notes-app
@@ -12,7 +11,6 @@ backend:
   name: backend
   ## @param backend.replicaCount Number of backend replicas.
   replicaCount: 1
-  ## @extra backend.image Backend container image settings.
   image:
     ## @param backend.image.repository Image repository.
     repository: chenarrr/devops
@@ -28,13 +26,11 @@ backend:
     type: ClusterIP
     ## @param backend.service.port Service port.
     port: 5000
-  ## @extra backend.env Backend environment variables.
   env:
     ## @param backend.env.mongodbUri MongoDB connection URI.
     mongodbUri: mongodb://mongodb-0.mongodb-service:27017/notes-app
     ## @param backend.env.nodeEnv Node environment.
     nodeEnv: production
-  ## @extra backend.podSecurityContext Pod-level security context.
   podSecurityContext:
     ## @param backend.podSecurityContext.runAsNonRoot Run as non-root user.
     runAsNonRoot: true
@@ -42,15 +38,12 @@ backend:
     runAsUser: 1000
     ## @param backend.podSecurityContext.fsGroup File system group ID.
     fsGroup: 1000
-  ## @extra backend.securityContext Container-level security context.
   securityContext:
     ## @param backend.securityContext.allowPrivilegeEscalation Allow privilege escalation.
     allowPrivilegeEscalation: false
     ## @param backend.securityContext.readOnlyRootFilesystem Mount root filesystem as read-only.
     readOnlyRootFilesystem: false
-  ## @extra backend.resources Backend resource requests and limits.
   resources:
-    ## @extra backend.resources.requests Backend resource requests.
     requests:
       ## @param backend.resources.requests.memory Requested memory.
       memory: 128Mi
@@ -62,7 +55,6 @@ backend:
       memory: 256Mi
       ## @param backend.resources.limits.cpu CPU limit.
       cpu: 200m
-  ## @extra backend.readinessProbe Backend readiness probe settings.
   readinessProbe:
     ## @param backend.readinessProbe.path Readiness endpoint path.
     path: /api/notes
@@ -72,7 +64,6 @@ backend:
     periodSeconds: 10
     ## @param backend.readinessProbe.timeoutSeconds Readiness check timeout.
     timeoutSeconds: 10
-  ## @extra backend.livenessProbe Backend liveness probe settings.
   livenessProbe:
     ## @param backend.livenessProbe.path Liveness endpoint path.
     path: /api/notes
