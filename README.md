@@ -8,7 +8,6 @@ Full stack notes app chart managed by Flux
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| backend | object | `{"containerPort":5000,"enabled":true,"env":{"mongodbUri":"mongodb://mongodb-0.mongodb-service:27017/notes-app","nodeEnv":"production"},"image":{"pullPolicy":"Always","repository":"chenarrr/devops","tag":"backend-a725016"},"livenessProbe":{"initialDelaySeconds":120,"path":"/api/notes","periodSeconds":60,"timeoutSeconds":30},"name":"backend","podSecurityContext":{"fsGroup":1000,"runAsNonRoot":true,"runAsUser":1000},"readinessProbe":{"initialDelaySeconds":30,"path":"/api/notes","periodSeconds":10,"timeoutSeconds":10},"replicaCount":1,"resources":{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}},"securityContext":{"allowPrivilegeEscalation":false,"readOnlyRootFilesystem":false},"service":{"port":5000,"type":"ClusterIP"}}` | Backend API server configuration |
 | backend.containerPort | int | `5000` | Backend container port |
 | backend.enabled | bool | `true` | Enable backend deployment |
 | backend.env | object | `{"mongodbUri":"mongodb://mongodb-0.mongodb-service:27017/notes-app","nodeEnv":"production"}` | Backend environment variables |

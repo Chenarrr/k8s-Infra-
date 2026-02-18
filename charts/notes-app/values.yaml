@@ -3,7 +3,6 @@ nameOverride: ""
 # -- Override the full release name
 fullnameOverride: notes-app
 
-# -- Backend API server configuration
 backend:
   # -- Enable backend deployment
   enabled: true
@@ -63,7 +62,6 @@ backend:
     periodSeconds: 60
     timeoutSeconds: 30
 
-# -- Frontend web server configuration
 frontend:
   # -- Enable frontend deployment
   enabled: true
@@ -111,7 +109,6 @@ frontend:
     periodSeconds: 60
     timeoutSeconds: 10
 
-# -- MongoDB database configuration
 mongodb:
   # -- Enable MongoDB StatefulSet
   enabled: true
@@ -156,7 +153,6 @@ mongodb:
     periodSeconds: 60
     timeoutSeconds: 30
 
-# -- Ingress configuration
 ingress:
   # -- Enable Ingress resource
   enabled: true
