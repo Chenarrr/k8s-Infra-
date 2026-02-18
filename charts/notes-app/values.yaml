@@ -1,168 +1,220 @@
-# -- Override the chart name
+## @section Common parameters
+## @param nameOverride Override the chart name.
 nameOverride: ""
-# -- Override the full release name
+## @param fullnameOverride Override the full release name.
 fullnameOverride: notes-app
 
+## @section Backend parameters
 backend:
-  # -- Enable backend deployment
+  ## @param backend.enabled Enable backend deployment.
   enabled: true
-  # -- Backend component name
+  ## @param backend.name Backend component name.
   name: backend
-  # -- Number of backend replicas
+  ## @param backend.replicaCount Number of backend replicas.
   replicaCount: 1
-  # -- Backend container image settings
+  ## @extra backend.image Backend container image settings.
   image:
-    # -- Image repository
+    ## @param backend.image.repository Image repository.
     repository: chenarrr/devops
-    # -- Image tag
+    ## @param backend.image.tag Image tag.
     tag: backend-a725016
-    # -- Image pull policy
+    ## @param backend.image.pullPolicy Image pull policy.
     pullPolicy: Always
-  # -- Backend container port
+  ## @param backend.containerPort Backend container port.
   containerPort: 5000
-  # -- Backend service configuration
+  ## @extra backend.service Backend service configuration.
   service:
-    # -- Service type
+    ## @param backend.service.type Service type.
     type: ClusterIP
-    # -- Service port
+    ## @param backend.service.port Service port.
     port: 5000
-  # -- Backend environment variables
+  ## @extra backend.env Backend environment variables.
   env:
-    # -- MongoDB connection URI
+    ## @param backend.env.mongodbUri MongoDB connection URI.
     mongodbUri: mongodb://mongodb-0.mongodb-service:27017/notes-app
-    # -- Node environment
+    ## @param backend.env.nodeEnv Node environment.
     nodeEnv: production
-  # -- Pod-level security context
+  ## @extra backend.podSecurityContext Pod-level security context.
   podSecurityContext:
+    ## @param backend.podSecurityContext.runAsNonRoot Run as non-root user.
     runAsNonRoot: true
+    ## @param backend.podSecurityContext.runAsUser User ID for the container process.
     runAsUser: 1000
+    ## @param backend.podSecurityContext.fsGroup File system group ID.
     fsGroup: 1000
-  # -- Container-level security context
+  ## @extra backend.securityContext Container-level security context.
   securityContext:
+    ## @param backend.securityContext.allowPrivilegeEscalation Allow privilege escalation.
     allowPrivilegeEscalation: false
+    ## @param backend.securityContext.readOnlyRootFilesystem Mount root filesystem as read-only.
     readOnlyRootFilesystem: false
-  # -- Backend resource requests and limits
+  ## @extra backend.resources Backend resource requests and limits.
   resources:
+    ## @extra backend.resources.requests Backend resource requests.
     requests:
+      ## @param backend.resources.requests.memory Requested memory.
       memory: 128Mi
+      ## @param backend.resources.requests.cpu Requested CPU.
       cpu: 100m
+    ## @extra backend.resources.limits Backend resource limits.
     limits:
+      ## @param backend.resources.limits.memory Memory limit.
       memory: 256Mi
+      ## @param backend.resources.limits.cpu CPU limit.
       cpu: 200m
-  # -- Backend readiness probe
+  ## @extra backend.readinessProbe Backend readiness probe settings.
   readinessProbe:
+    ## @param backend.readinessProbe.path Readiness endpoint path.
     path: /api/notes
+    ## @param backend.readinessProbe.initialDelaySeconds Initial delay before readiness checks.
     initialDelaySeconds: 30
+    ## @param backend.readinessProbe.periodSeconds Readiness check interval.
     periodSeconds: 10
+    ## @param backend.readinessProbe.timeoutSeconds Readiness check timeout.
     timeoutSeconds: 10
-  # -- Backend liveness probe
+  ## @extra backend.livenessProbe Backend liveness probe settings.
   livenessProbe:
+    ## @param backend.livenessProbe.path Liveness endpoint path.
     path: /api/notes
+    ## @param backend.livenessProbe.initialDelaySeconds Initial delay before liveness checks.
     initialDelaySeconds: 120
+    ## @param backend.livenessProbe.periodSeconds Liveness check interval.
     periodSeconds: 60
+    ## @param backend.livenessProbe.timeoutSeconds Liveness check timeout.
     timeoutSeconds: 30
 
+## @section Frontend parameters
 frontend:
-  # -- Enable frontend deployment
+  ## @param frontend.enabled Enable frontend deployment.
   enabled: true
-  # -- Frontend component name
+  ## @param frontend.name Frontend component name.
   name: frontend
-  # -- Number of frontend replicas
+  ## @param frontend.replicaCount Number of frontend replicas.
   replicaCount: 1
-  # -- Frontend container image settings
+  ## @extra frontend.image Frontend container image settings.
   image:
-    # -- Image repository
+    ## @param frontend.image.repository Image repository.
     repository: chenarrr/devops
-    # -- Image tag
+    ## @param frontend.image.tag Image tag.
     tag: frontend-a725016
-    # -- Image pull policy
+    ## @param frontend.image.pullPolicy Image pull policy.
     pullPolicy: Always
-  # -- Frontend container port
+  ## @param frontend.containerPort Frontend container port.
   containerPort: 80
-  # -- Frontend service configuration
+  ## @extra frontend.service Frontend service configuration.
   service:
-    # -- Service type
+    ## @param frontend.service.type Service type.
     type: ClusterIP
-    # -- Service port
+    ## @param frontend.service.port Service port.
     port: 80
-  # -- Frontend resource requests and limits
+  ## @extra frontend.resources Frontend resource requests and limits.
   resources:
+    ## @extra frontend.resources.requests Frontend resource requests.
     requests:
+      ## @param frontend.resources.requests.memory Requested memory.
       memory: 64Mi
+      ## @param frontend.resources.requests.cpu Requested CPU.
       cpu: 50m
+    ## @extra frontend.resources.limits Frontend resource limits.
     limits:
+      ## @param frontend.resources.limits.memory Memory limit.
       memory: 128Mi
+      ## @param frontend.resources.limits.cpu CPU limit.
       cpu: 100m
-  # -- Container-level security context
+  ## @extra frontend.securityContext Container-level security context.
   securityContext:
+    ## @param frontend.securityContext.allowPrivilegeEscalation Allow privilege escalation.
     allowPrivilegeEscalation: false
-  # -- Frontend readiness probe
+  ## @extra frontend.readinessProbe Frontend readiness probe settings.
   readinessProbe:
+    ## @param frontend.readinessProbe.path Readiness endpoint path.
     path: /
+    ## @param frontend.readinessProbe.initialDelaySeconds Initial delay before readiness checks.
     initialDelaySeconds: 5
+    ## @param frontend.readinessProbe.periodSeconds Readiness check interval.
     periodSeconds: 10
+    ## @param frontend.readinessProbe.timeoutSeconds Readiness check timeout.
     timeoutSeconds: 3
-  # -- Frontend liveness probe
+  ## @extra frontend.livenessProbe Frontend liveness probe settings.
   livenessProbe:
+    ## @param frontend.livenessProbe.path Liveness endpoint path.
     path: /
+    ## @param frontend.livenessProbe.initialDelaySeconds Initial delay before liveness checks.
     initialDelaySeconds: 30
+    ## @param frontend.livenessProbe.periodSeconds Liveness check interval.
     periodSeconds: 60
+    ## @param frontend.livenessProbe.timeoutSeconds Liveness check timeout.
     timeoutSeconds: 10
 
+## @section MongoDB parameters
 mongodb:
-  # -- Enable MongoDB StatefulSet
+  ## @param mongodb.enabled Enable MongoDB StatefulSet.
   enabled: true
-  # -- MongoDB component name
+  ## @param mongodb.name MongoDB component name.
   name: mongodb
-  # -- Headless service name for StatefulSet DNS
+  ## @param mongodb.serviceName Headless service name for StatefulSet DNS.
   serviceName: mongodb-service
-  # -- Number of MongoDB replicas
+  ## @param mongodb.replicaCount Number of MongoDB replicas.
   replicaCount: 1
-  # -- MongoDB container image settings
+  ## @extra mongodb.image MongoDB container image settings.
   image:
-    # -- Image repository
+    ## @param mongodb.image.repository Image repository.
     repository: mongo
-    # -- Image tag
+    ## @param mongodb.image.tag Image tag.
     tag: "8"
-  # -- MongoDB container port
+  ## @param mongodb.containerPort MongoDB container port.
   containerPort: 27017
-  # -- Persistent storage configuration
+  ## @extra mongodb.storage Persistent storage configuration.
   storage:
-    # -- Storage class name
+    ## @param mongodb.storage.storageClassName Storage class name.
     storageClassName: manual
-    # -- Volume size
+    ## @param mongodb.storage.size Volume size.
     size: 5Gi
-    # -- Host path for local storage
+    ## @param mongodb.storage.hostPath Host path for local storage.
     hostPath: /mnt/data/mongodb
-  # -- MongoDB resource requests and limits
+  ## @extra mongodb.resources MongoDB resource requests and limits.
   resources:
+    ## @extra mongodb.resources.requests MongoDB resource requests.
     requests:
+      ## @param mongodb.resources.requests.memory Requested memory.
       memory: 256Mi
+      ## @param mongodb.resources.requests.cpu Requested CPU.
       cpu: 100m
+    ## @extra mongodb.resources.limits MongoDB resource limits.
     limits:
+      ## @param mongodb.resources.limits.memory Memory limit.
       memory: 512Mi
+      ## @param mongodb.resources.limits.cpu CPU limit.
       cpu: 200m
-  # -- MongoDB readiness probe
+  ## @extra mongodb.readinessProbe MongoDB readiness probe settings.
   readinessProbe:
+    ## @param mongodb.readinessProbe.initialDelaySeconds Initial delay before readiness checks.
     initialDelaySeconds: 30
+    ## @param mongodb.readinessProbe.periodSeconds Readiness check interval.
     periodSeconds: 10
+    ## @param mongodb.readinessProbe.timeoutSeconds Readiness check timeout.
     timeoutSeconds: 10
-  # -- MongoDB liveness probe
+  ## @extra mongodb.livenessProbe MongoDB liveness probe settings.
   livenessProbe:
+    ## @param mongodb.livenessProbe.initialDelaySeconds Initial delay before liveness checks.
     initialDelaySeconds: 120
+    ## @param mongodb.livenessProbe.periodSeconds Liveness check interval.
     periodSeconds: 60
+    ## @param mongodb.livenessProbe.timeoutSeconds Liveness check timeout.
     timeoutSeconds: 30
 
+## @section Ingress parameters
 ingress:
-  # -- Enable Ingress resource
+  ## @param ingress.enabled Enable Ingress resource.
   enabled: true
-  # -- Ingress resource name
+  ## @param ingress.name Ingress resource name.
   name: notes-app-ingress
-  # -- Ingress annotations
+  ## @skip ingress.annotations Ingress annotations.
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: 10m
-  # -- Ingress class name
+  ## @param ingress.className Ingress class name.
   className: nginx
-  # -- Ingress path
+  ## @param ingress.path Ingress path.
   path: /
+  ## @param ingress.pathType Ingress path type.
   pathType: Prefix

@@ -4,69 +4,134 @@
 
 Full stack notes app chart managed by Flux
 
-## Values
+## Parameters
 
-| Key | Type | Default | Description |
-|-----|------|---------|-------------|
-| backend.containerPort | int | `5000` | Backend container port |
-| backend.enabled | bool | `true` | Enable backend deployment |
-| backend.env | object | `{"mongodbUri":"mongodb://mongodb-0.mongodb-service:27017/notes-app","nodeEnv":"production"}` | Backend environment variables |
-| backend.env.mongodbUri | string | `"mongodb://mongodb-0.mongodb-service:27017/notes-app"` | MongoDB connection URI |
-| backend.env.nodeEnv | string | `"production"` | Node environment |
-| backend.image | object | `{"pullPolicy":"Always","repository":"chenarrr/devops","tag":"backend-a725016"}` | Backend container image settings |
-| backend.image.pullPolicy | string | `"Always"` | Image pull policy |
-| backend.image.repository | string | `"chenarrr/devops"` | Image repository |
-| backend.image.tag | string | `"backend-a725016"` | Image tag |
-| backend.livenessProbe | object | `{"initialDelaySeconds":120,"path":"/api/notes","periodSeconds":60,"timeoutSeconds":30}` | Backend liveness probe |
-| backend.name | string | `"backend"` | Backend component name |
-| backend.podSecurityContext | object | `{"fsGroup":1000,"runAsNonRoot":true,"runAsUser":1000}` | Pod-level security context |
-| backend.readinessProbe | object | `{"initialDelaySeconds":30,"path":"/api/notes","periodSeconds":10,"timeoutSeconds":10}` | Backend readiness probe |
-| backend.replicaCount | int | `1` | Number of backend replicas |
-| backend.resources | object | `{"limits":{"cpu":"200m","memory":"256Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}` | Backend resource requests and limits |
-| backend.securityContext | object | `{"allowPrivilegeEscalation":false,"readOnlyRootFilesystem":false}` | Container-level security context |
-| backend.service | object | `{"port":5000,"type":"ClusterIP"}` | Backend service configuration |
-| backend.service.port | int | `5000` | Service port |
-| backend.service.type | string | `"ClusterIP"` | Service type |
-| frontend | object | `{"containerPort":80,"enabled":true,"image":{"pullPolicy":"Always","repository":"chenarrr/devops","tag":"frontend-a725016"},"livenessProbe":{"initialDelaySeconds":30,"path":"/","periodSeconds":60,"timeoutSeconds":10},"name":"frontend","readinessProbe":{"initialDelaySeconds":5,"path":"/","periodSeconds":10,"timeoutSeconds":3},"replicaCount":1,"resources":{"limits":{"cpu":"100m","memory":"128Mi"},"requests":{"cpu":"50m","memory":"64Mi"}},"securityContext":{"allowPrivilegeEscalation":false},"service":{"port":80,"type":"ClusterIP"}}` | Frontend web server configuration |
-| frontend.containerPort | int | `80` | Frontend container port |
-| frontend.enabled | bool | `true` | Enable frontend deployment |
-| frontend.image | object | `{"pullPolicy":"Always","repository":"chenarrr/devops","tag":"frontend-a725016"}` | Frontend container image settings |
-| frontend.image.pullPolicy | string | `"Always"` | Image pull policy |
-| frontend.image.repository | string | `"chenarrr/devops"` | Image repository |
-| frontend.image.tag | string | `"frontend-a725016"` | Image tag |
-| frontend.livenessProbe | object | `{"initialDelaySeconds":30,"path":"/","periodSeconds":60,"timeoutSeconds":10}` | Frontend liveness probe |
-| frontend.name | string | `"frontend"` | Frontend component name |
-| frontend.readinessProbe | object | `{"initialDelaySeconds":5,"path":"/","periodSeconds":10,"timeoutSeconds":3}` | Frontend readiness probe |
-| frontend.replicaCount | int | `1` | Number of frontend replicas |
-| frontend.resources | object | `{"limits":{"cpu":"100m","memory":"128Mi"},"requests":{"cpu":"50m","memory":"64Mi"}}` | Frontend resource requests and limits |
-| frontend.securityContext | object | `{"allowPrivilegeEscalation":false}` | Container-level security context |
-| frontend.service | object | `{"port":80,"type":"ClusterIP"}` | Frontend service configuration |
-| frontend.service.port | int | `80` | Service port |
-| frontend.service.type | string | `"ClusterIP"` | Service type |
-| fullnameOverride | string | `"notes-app"` | Override the full release name |
-| ingress | object | `{"annotations":{"nginx.ingress.kubernetes.io/proxy-body-size":"10m"},"className":"nginx","enabled":true,"name":"notes-app-ingress","path":"/","pathType":"Prefix"}` | Ingress configuration |
-| ingress.annotations | object | `{"nginx.ingress.kubernetes.io/proxy-body-size":"10m"}` | Ingress annotations |
-| ingress.className | string | `"nginx"` | Ingress class name |
-| ingress.enabled | bool | `true` | Enable Ingress resource |
-| ingress.name | string | `"notes-app-ingress"` | Ingress resource name |
-| ingress.path | string | `"/"` | Ingress path |
-| mongodb | object | `{"containerPort":27017,"enabled":true,"image":{"repository":"mongo","tag":"8"},"livenessProbe":{"initialDelaySeconds":120,"periodSeconds":60,"timeoutSeconds":30},"name":"mongodb","readinessProbe":{"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":10},"replicaCount":1,"resources":{"limits":{"cpu":"200m","memory":"512Mi"},"requests":{"cpu":"100m","memory":"256Mi"}},"serviceName":"mongodb-service","storage":{"hostPath":"/mnt/data/mongodb","size":"5Gi","storageClassName":"manual"}}` | MongoDB database configuration |
-| mongodb.containerPort | int | `27017` | MongoDB container port |
-| mongodb.enabled | bool | `true` | Enable MongoDB StatefulSet |
-| mongodb.image | object | `{"repository":"mongo","tag":"8"}` | MongoDB container image settings |
-| mongodb.image.repository | string | `"mongo"` | Image repository |
-| mongodb.image.tag | string | `"8"` | Image tag |
-| mongodb.livenessProbe | object | `{"initialDelaySeconds":120,"periodSeconds":60,"timeoutSeconds":30}` | MongoDB liveness probe |
-| mongodb.name | string | `"mongodb"` | MongoDB component name |
-| mongodb.readinessProbe | object | `{"initialDelaySeconds":30,"periodSeconds":10,"timeoutSeconds":10}` | MongoDB readiness probe |
-| mongodb.replicaCount | int | `1` | Number of MongoDB replicas |
-| mongodb.resources | object | `{"limits":{"cpu":"200m","memory":"512Mi"},"requests":{"cpu":"100m","memory":"256Mi"}}` | MongoDB resource requests and limits |
-| mongodb.serviceName | string | `"mongodb-service"` | Headless service name for StatefulSet DNS |
-| mongodb.storage | object | `{"hostPath":"/mnt/data/mongodb","size":"5Gi","storageClassName":"manual"}` | Persistent storage configuration |
-| mongodb.storage.hostPath | string | `"/mnt/data/mongodb"` | Host path for local storage |
-| mongodb.storage.size | string | `"5Gi"` | Volume size |
-| mongodb.storage.storageClassName | string | `"manual"` | Storage class name |
-| nameOverride | string | `""` | Override the chart name |
+### Common parameters
+
+| Name               | Description                     | Value       |
+| ------------------ | ------------------------------- | ----------- |
+| `nameOverride`     | Override the chart name.        | `""`        |
+| `fullnameOverride` | Override the full release name. | `notes-app` |
+
+### Backend parameters
+
+| Name                                               | Description                            | Value                                                 |
+| -------------------------------------------------- | -------------------------------------- | ----------------------------------------------------- |
+| `backend.enabled`                                  | Enable backend deployment.             | `true`                                                |
+| `backend.name`                                     | Backend component name.                | `backend`                                             |
+| `backend.replicaCount`                             | Number of backend replicas.            | `1`                                                   |
+| `backend.image`                                    | Backend container image settings.      |                                                       |
+| `backend.image.repository`                         | Image repository.                      | `chenarrr/devops`                                     |
+| `backend.image.tag`                                | Image tag.                             | `backend-a725016`                                     |
+| `backend.image.pullPolicy`                         | Image pull policy.                     | `Always`                                              |
+| `backend.containerPort`                            | Backend container port.                | `5000`                                                |
+| `backend.service`                                  | Backend service configuration.         |                                                       |
+| `backend.service.type`                             | Service type.                          | `ClusterIP`                                           |
+| `backend.service.port`                             | Service port.                          | `5000`                                                |
+| `backend.env`                                      | Backend environment variables.         |                                                       |
+| `backend.env.mongodbUri`                           | MongoDB connection URI.                | `mongodb://mongodb-0.mongodb-service:27017/notes-app` |
+| `backend.env.nodeEnv`                              | Node environment.                      | `production`                                          |
+| `backend.podSecurityContext`                       | Pod-level security context.            |                                                       |
+| `backend.podSecurityContext.runAsNonRoot`          | Run as non-root user.                  | `true`                                                |
+| `backend.podSecurityContext.runAsUser`             | User ID for the container process.     | `1000`                                                |
+| `backend.podSecurityContext.fsGroup`               | File system group ID.                  | `1000`                                                |
+| `backend.securityContext`                          | Container-level security context.      |                                                       |
+| `backend.securityContext.allowPrivilegeEscalation` | Allow privilege escalation.            | `false`                                               |
+| `backend.securityContext.readOnlyRootFilesystem`   | Mount root filesystem as read-only.    | `false`                                               |
+| `backend.resources`                                | Backend resource requests and limits.  |                                                       |
+| `backend.resources.requests`                       | Backend resource requests.             |                                                       |
+| `backend.resources.requests.memory`                | Requested memory.                      | `128Mi`                                               |
+| `backend.resources.requests.cpu`                   | Requested CPU.                         | `100m`                                                |
+| `backend.resources.limits`                         | Backend resource limits.               |                                                       |
+| `backend.resources.limits.memory`                  | Memory limit.                          | `256Mi`                                               |
+| `backend.resources.limits.cpu`                     | CPU limit.                             | `200m`                                                |
+| `backend.readinessProbe`                           | Backend readiness probe settings.      |                                                       |
+| `backend.readinessProbe.path`                      | Readiness endpoint path.               | `/api/notes`                                          |
+| `backend.readinessProbe.initialDelaySeconds`       | Initial delay before readiness checks. | `30`                                                  |
+| `backend.readinessProbe.periodSeconds`             | Readiness check interval.              | `10`                                                  |
+| `backend.readinessProbe.timeoutSeconds`            | Readiness check timeout.               | `10`                                                  |
+| `backend.livenessProbe`                            | Backend liveness probe settings.       |                                                       |
+| `backend.livenessProbe.path`                       | Liveness endpoint path.                | `/api/notes`                                          |
+| `backend.livenessProbe.initialDelaySeconds`        | Initial delay before liveness checks.  | `120`                                                 |
+| `backend.livenessProbe.periodSeconds`              | Liveness check interval.               | `60`                                                  |
+| `backend.livenessProbe.timeoutSeconds`             | Liveness check timeout.                | `30`                                                  |
+
+### Frontend parameters
+
+| Name                                                | Description                            | Value              |
+| --------------------------------------------------- | -------------------------------------- | ------------------ |
+| `frontend.enabled`                                  | Enable frontend deployment.            | `true`             |
+| `frontend.name`                                     | Frontend component name.               | `frontend`         |
+| `frontend.replicaCount`                             | Number of frontend replicas.           | `1`                |
+| `frontend.image`                                    | Frontend container image settings.     |                    |
+| `frontend.image.repository`                         | Image repository.                      | `chenarrr/devops`  |
+| `frontend.image.tag`                                | Image tag.                             | `frontend-a725016` |
+| `frontend.image.pullPolicy`                         | Image pull policy.                     | `Always`           |
+| `frontend.containerPort`                            | Frontend container port.               | `80`               |
+| `frontend.service`                                  | Frontend service configuration.        |                    |
+| `frontend.service.type`                             | Service type.                          | `ClusterIP`        |
+| `frontend.service.port`                             | Service port.                          | `80`               |
+| `frontend.resources`                                | Frontend resource requests and limits. |                    |
+| `frontend.resources.requests`                       | Frontend resource requests.            |                    |
+| `frontend.resources.requests.memory`                | Requested memory.                      | `64Mi`             |
+| `frontend.resources.requests.cpu`                   | Requested CPU.                         | `50m`              |
+| `frontend.resources.limits`                         | Frontend resource limits.              |                    |
+| `frontend.resources.limits.memory`                  | Memory limit.                          | `128Mi`            |
+| `frontend.resources.limits.cpu`                     | CPU limit.                             | `100m`             |
+| `frontend.securityContext`                          | Container-level security context.      |                    |
+| `frontend.securityContext.allowPrivilegeEscalation` | Allow privilege escalation.            | `false`            |
+| `frontend.readinessProbe`                           | Frontend readiness probe settings.     |                    |
+| `frontend.readinessProbe.path`                      | Readiness endpoint path.               | `/`                |
+| `frontend.readinessProbe.initialDelaySeconds`       | Initial delay before readiness checks. | `5`                |
+| `frontend.readinessProbe.periodSeconds`             | Readiness check interval.              | `10`               |
+| `frontend.readinessProbe.timeoutSeconds`            | Readiness check timeout.               | `3`                |
+| `frontend.livenessProbe`                            | Frontend liveness probe settings.      |                    |
+| `frontend.livenessProbe.path`                       | Liveness endpoint path.                | `/`                |
+| `frontend.livenessProbe.initialDelaySeconds`        | Initial delay before liveness checks.  | `30`               |
+| `frontend.livenessProbe.periodSeconds`              | Liveness check interval.               | `60`               |
+| `frontend.livenessProbe.timeoutSeconds`             | Liveness check timeout.                | `10`               |
+
+### MongoDB parameters
+
+| Name                                         | Description                                | Value               |
+| -------------------------------------------- | ------------------------------------------ | ------------------- |
+| `mongodb.enabled`                            | Enable MongoDB StatefulSet.                | `true`              |
+| `mongodb.name`                               | MongoDB component name.                    | `mongodb`           |
+| `mongodb.serviceName`                        | Headless service name for StatefulSet DNS. | `mongodb-service`   |
+| `mongodb.replicaCount`                       | Number of MongoDB replicas.                | `1`                 |
+| `mongodb.image`                              | MongoDB container image settings.          |                     |
+| `mongodb.image.repository`                   | Image repository.                          | `mongo`             |
+| `mongodb.image.tag`                          | Image tag.                                 | `8`                 |
+| `mongodb.containerPort`                      | MongoDB container port.                    | `27017`             |
+| `mongodb.storage`                            | Persistent storage configuration.          |                     |
+| `mongodb.storage.storageClassName`           | Storage class name.                        | `manual`            |
+| `mongodb.storage.size`                       | Volume size.                               | `5Gi`               |
+| `mongodb.storage.hostPath`                   | Host path for local storage.               | `/mnt/data/mongodb` |
+| `mongodb.resources`                          | MongoDB resource requests and limits.      |                     |
+| `mongodb.resources.requests`                 | MongoDB resource requests.                 |                     |
+| `mongodb.resources.requests.memory`          | Requested memory.                          | `256Mi`             |
+| `mongodb.resources.requests.cpu`             | Requested CPU.                             | `100m`              |
+| `mongodb.resources.limits`                   | MongoDB resource limits.                   |                     |
+| `mongodb.resources.limits.memory`            | Memory limit.                              | `512Mi`             |
+| `mongodb.resources.limits.cpu`               | CPU limit.                                 | `200m`              |
+| `mongodb.readinessProbe`                     | MongoDB readiness probe settings.          |                     |
+| `mongodb.readinessProbe.initialDelaySeconds` | Initial delay before readiness checks.     | `30`                |
+| `mongodb.readinessProbe.periodSeconds`       | Readiness check interval.                  | `10`                |
+| `mongodb.readinessProbe.timeoutSeconds`      | Readiness check timeout.                   | `10`                |
+| `mongodb.livenessProbe`                      | MongoDB liveness probe settings.           |                     |
+| `mongodb.livenessProbe.initialDelaySeconds`  | Initial delay before liveness checks.      | `120`               |
+| `mongodb.livenessProbe.periodSeconds`        | Liveness check interval.                   | `60`                |
+| `mongodb.livenessProbe.timeoutSeconds`       | Liveness check timeout.                    | `30`                |
+
+### Ingress parameters
+
+| Name                | Description              | Value               |
+| ------------------- | ------------------------ | ------------------- |
+| `ingress.enabled`   | Enable Ingress resource. | `true`              |
+| `ingress.name`      | Ingress resource name.   | `notes-app-ingress` |
+| `ingress.className` | Ingress class name.      | `nginx`             |
+| `ingress.path`      | Ingress path.            | `/`                 |
+| `ingress.pathType`  | Ingress path type.       | `Prefix`            |
 
 ----------------------------------------------
-Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)
+Autogenerated from chart metadata using [Bitnami readme-generator-for-helm](https://github.com/bitnami/readme-generator-for-helm)

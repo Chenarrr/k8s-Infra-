@@ -16,8 +16,8 @@ lint:
 	@cd charts/notes-app && helm lint .
 
 docs:
-	@echo "📝 Generating docs with helm-docs..."
-	@cd charts/notes-app && helm-docs --output-file ../../README.md
+	@echo "📝 Generating docs with Bitnami readme-generator-for-helm..."
+	@readme-generator --values charts/notes-app/values.yaml --readme README.md
 	@echo "✅ Documentation generated in README.md"
 
 check: lint test docs

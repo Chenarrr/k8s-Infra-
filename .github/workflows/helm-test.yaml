@@ -34,13 +34,16 @@ jobs:
         run: |
           make test
 
-      - name: Install helm-docs
-        run: |
-          GO111MODULE=on go install github.com/norwoodj/helm-docs/cmd/helm-docs@latest
-          echo "$HOME/go/bin" >> $GITHUB_PATH
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-      - name: Generate docs with helm-docs
+      - name: Install Bitnami readme-generator-for-helm
+        run: |
+          npm install --global github:bitnami/readme-generator-for-helm
+
+      - name: Generate docs with Bitnami readme-generator-for-helm
         run: |
           make docs
-          echo "helm-docs documentation generated successfully"
-
+          echo "Bitnami readme-generator-for-helm documentation generated successfully"
