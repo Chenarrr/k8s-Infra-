@@ -10,7 +10,6 @@ Full stack notes app chart managed by Flux
 
 | Name               | Description                     | Value       |
 | ------------------ | ------------------------------- | ----------- |
-| `nameOverride`     | Override the chart name.        | `""`        |
 | `fullnameOverride` | Override the full release name. | `notes-app` |
 
 ### Backend parameters
@@ -55,29 +54,21 @@ Full stack notes app chart managed by Flux
 | `frontend.enabled`                                  | Enable frontend deployment.            | `true`             |
 | `frontend.name`                                     | Frontend component name.               | `frontend`         |
 | `frontend.replicaCount`                             | Number of frontend replicas.           | `1`                |
-| `frontend.image`                                    | Frontend container image settings.     |                    |
 | `frontend.image.repository`                         | Image repository.                      | `chenarrr/devops`  |
 | `frontend.image.tag`                                | Image tag.                             | `frontend-a725016` |
 | `frontend.image.pullPolicy`                         | Image pull policy.                     | `Always`           |
 | `frontend.containerPort`                            | Frontend container port.               | `80`               |
-| `frontend.service`                                  | Frontend service configuration.        |                    |
 | `frontend.service.type`                             | Service type.                          | `ClusterIP`        |
 | `frontend.service.port`                             | Service port.                          | `80`               |
-| `frontend.resources`                                | Frontend resource requests and limits. |                    |
-| `frontend.resources.requests`                       | Frontend resource requests.            |                    |
 | `frontend.resources.requests.memory`                | Requested memory.                      | `64Mi`             |
 | `frontend.resources.requests.cpu`                   | Requested CPU.                         | `50m`              |
-| `frontend.resources.limits`                         | Frontend resource limits.              |                    |
 | `frontend.resources.limits.memory`                  | Memory limit.                          | `128Mi`            |
 | `frontend.resources.limits.cpu`                     | CPU limit.                             | `100m`             |
-| `frontend.securityContext`                          | Container-level security context.      |                    |
 | `frontend.securityContext.allowPrivilegeEscalation` | Allow privilege escalation.            | `false`            |
-| `frontend.readinessProbe`                           | Frontend readiness probe settings.     |                    |
 | `frontend.readinessProbe.path`                      | Readiness endpoint path.               | `/`                |
 | `frontend.readinessProbe.initialDelaySeconds`       | Initial delay before readiness checks. | `5`                |
 | `frontend.readinessProbe.periodSeconds`             | Readiness check interval.              | `10`               |
 | `frontend.readinessProbe.timeoutSeconds`            | Readiness check timeout.               | `3`                |
-| `frontend.livenessProbe`                            | Frontend liveness probe settings.      |                    |
 | `frontend.livenessProbe.path`                       | Liveness endpoint path.                | `/`                |
 | `frontend.livenessProbe.initialDelaySeconds`        | Initial delay before liveness checks.  | `30`               |
 | `frontend.livenessProbe.periodSeconds`              | Liveness check interval.               | `60`               |
@@ -91,39 +82,33 @@ Full stack notes app chart managed by Flux
 | `mongodb.name`                               | MongoDB component name.                    | `mongodb`           |
 | `mongodb.serviceName`                        | Headless service name for StatefulSet DNS. | `mongodb-service`   |
 | `mongodb.replicaCount`                       | Number of MongoDB replicas.                | `1`                 |
-| `mongodb.image`                              | MongoDB container image settings.          |                     |
 | `mongodb.image.repository`                   | Image repository.                          | `mongo`             |
 | `mongodb.image.tag`                          | Image tag.                                 | `8`                 |
 | `mongodb.containerPort`                      | MongoDB container port.                    | `27017`             |
-| `mongodb.storage`                            | Persistent storage configuration.          |                     |
 | `mongodb.storage.storageClassName`           | Storage class name.                        | `manual`            |
 | `mongodb.storage.size`                       | Volume size.                               | `5Gi`               |
 | `mongodb.storage.hostPath`                   | Host path for local storage.               | `/mnt/data/mongodb` |
-| `mongodb.resources`                          | MongoDB resource requests and limits.      |                     |
-| `mongodb.resources.requests`                 | MongoDB resource requests.                 |                     |
 | `mongodb.resources.requests.memory`          | Requested memory.                          | `256Mi`             |
 | `mongodb.resources.requests.cpu`             | Requested CPU.                             | `100m`              |
-| `mongodb.resources.limits`                   | MongoDB resource limits.                   |                     |
 | `mongodb.resources.limits.memory`            | Memory limit.                              | `512Mi`             |
 | `mongodb.resources.limits.cpu`               | CPU limit.                                 | `200m`              |
-| `mongodb.readinessProbe`                     | MongoDB readiness probe settings.          |                     |
 | `mongodb.readinessProbe.initialDelaySeconds` | Initial delay before readiness checks.     | `30`                |
 | `mongodb.readinessProbe.periodSeconds`       | Readiness check interval.                  | `10`                |
 | `mongodb.readinessProbe.timeoutSeconds`      | Readiness check timeout.                   | `10`                |
-| `mongodb.livenessProbe`                      | MongoDB liveness probe settings.           |                     |
 | `mongodb.livenessProbe.initialDelaySeconds`  | Initial delay before liveness checks.      | `120`               |
 | `mongodb.livenessProbe.periodSeconds`        | Liveness check interval.                   | `60`                |
 | `mongodb.livenessProbe.timeoutSeconds`       | Liveness check timeout.                    | `30`                |
 
 ### Ingress parameters
 
-| Name                | Description              | Value               |
-| ------------------- | ------------------------ | ------------------- |
-| `ingress.enabled`   | Enable Ingress resource. | `true`              |
-| `ingress.name`      | Ingress resource name.   | `notes-app-ingress` |
-| `ingress.className` | Ingress class name.      | `nginx`             |
-| `ingress.path`      | Ingress path.            | `/`                 |
-| `ingress.pathType`  | Ingress path type.       | `Prefix`            |
+| Name                                                              | Description                          | Value               |
+| ----------------------------------------------------------------- | ------------------------------------ | ------------------- |
+| `ingress.enabled`                                                 | Enable Ingress resource.             | `true`              |
+| `ingress.name`                                                    | Ingress resource name.               | `notes-app-ingress` |
+| `ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size` | Set max body size for NGINX ingress. | `10m`               |
+| `ingress.className`                                               | Ingress class name.                  | `nginx`             |
+| `ingress.path`                                                    | Ingress path.                        | `/`                 |
+| `ingress.pathType`                                                | Ingress path type.                   | `Prefix`            |
 
 ----------------------------------------------
 Autogenerated from chart metadata using [Bitnami readme-generator-for-helm](https://github.com/bitnami/readme-generator-for-helm)
