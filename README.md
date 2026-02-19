@@ -22,7 +22,7 @@ Full stack notes app chart managed by Flux
 | `backend.image.repository`                         | Image repository.                      | `chenarrr/devops`                                     |
 | `backend.image.tag`                                | Image tag.                             | `backend-a725016`                                     |
 | `backend.image.pullPolicy`                         | Image pull policy.                     | `Always`                                              |
-| `backend.containerPort`                            | Backend container port.                | `5000`                                                |
+| `backend.containerPort`                            | Backend container port.                | `{}`                                                  |
 | `backend.service`                                  | Backend service configuration.         |                                                       |
 | `backend.service.type`                             | Service type.                          | `ClusterIP`                                           |
 | `backend.service.port`                             | Service port.                          | `5000`                                                |
