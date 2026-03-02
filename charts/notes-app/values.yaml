@@ -1,195 +1,233 @@
 ## @section Common parameters
-## @param fullnameOverride Override the full release name.
+
+## @param fullnameOverride Override the full release name used for all resources.
 fullnameOverride: notes-app
 
 ## @section Backend parameters
+
 backend:
-  ## @param backend.enabled Enable backend deployment.
+  ## @param backend.enabled Enable or disable the backend Deployment and Service.
   enabled: true
-  ## @param backend.name Backend component name.
+  ## @param backend.name Name used for the backend Deployment, Service, and labels.
   name: backend
-  ## @param backend.replicaCount Number of backend replicas.
+  ## @param backend.replicaCount Number of backend pod replicas to run.
   replicaCount: 1
+  ## @extra backend.image Backend container image configuration.
   image:
-    ## @param backend.image.repository Image repository.
+    ## @param backend.image.repository Docker image repository for the backend.
     repository: chenarrr/devops
-    ## @param backend.image.tag Image tag.
+    ## @param backend.image.tag Docker image tag for the backend.
     tag: backend-a725016
-    ## @param backend.image.pullPolicy Image pull policy.
+    ## @param backend.image.pullPolicy Image pull policy (Always, IfNotPresent, Never).
     pullPolicy: Always
-  ## @param backend.containerPort [object] Backend container port.
+  ## @param backend.containerPort Port the backend container listens on.
   containerPort: 5000
-  ## @extra backend.service Backend service configuration.
+  ## @extra backend.service Backend Kubernetes Service configuration.
   service:
-    ## @param backend.service.type Service type.
+    ## @param backend.service.type Kubernetes Service type (ClusterIP, NodePort, LoadBalancer).
     type: ClusterIP
-    ## @param backend.service.port Service port.
+    ## @param backend.service.port Port exposed by the backend Service.
     port: 5000
+  ## @extra backend.env Environment variables injected into the backend container.
   env:
-    ## @param backend.env.mongodbUri MongoDB connection URI.
+    ## @param backend.env.mongodbUri Full MongoDB connection URI used by the backend.
     mongodbUri: mongodb://mongodb-0.mongodb-service:27017/notes-app
-    ## @param backend.env.nodeEnv Node environment.
+    ## @param backend.env.nodeEnv Node.js runtime environment (production, development).
     nodeEnv: production
+  ## @extra backend.podSecurityContext Security context applied at the pod level.
   podSecurityContext:
-    ## @param backend.podSecurityContext.runAsNonRoot Run as non-root user.
+    ## @param backend.podSecurityContext.runAsNonRoot Require the container to run as a non-root user.
     runAsNonRoot: true
-    ## @param backend.podSecurityContext.runAsUser User ID for the container process.
+    ## @param backend.podSecurityContext.runAsUser UID for the container process.
     runAsUser: 1000
-    ## @param backend.podSecurityContext.fsGroup File system group ID.
+    ## @param backend.podSecurityContext.fsGroup GID applied to mounted volumes for file access.
     fsGroup: 1000
+  ## @extra backend.securityContext Security context applied at the container level.
   securityContext:
-    ## @param backend.securityContext.allowPrivilegeEscalation Allow privilege escalation.
+    ## @param backend.securityContext.allowPrivilegeEscalation Prevent the process from gaining extra privileges.
     allowPrivilegeEscalation: false
-    ## @param backend.securityContext.readOnlyRootFilesystem Mount root filesystem as read-only.
+    ## @param backend.securityContext.readOnlyRootFilesystem Mount the container root filesystem as read-only.
     readOnlyRootFilesystem: false
+  ## @extra backend.resources CPU and memory resource requests and limits for the backend container.
   resources:
+    ## @extra backend.resources.requests Minimum resources guaranteed to the backend container.
     requests:
-      ## @param backend.resources.requests.memory Requested memory.
+      ## @param backend.resources.requests.memory Minimum memory allocated to the backend container.
       memory: 64Mi
-      ## @param backend.resources.requests.cpu Requested CPU.
+      ## @param backend.resources.requests.cpu Minimum CPU allocated to the backend container.
       cpu: 10m
-    ## @extra backend.resources.limits Backend resource limits.
+    ## @extra backend.resources.limits Maximum resources the backend container is allowed to consume.
     limits:
-      ## @param backend.resources.limits.memory Memory limit.
+      ## @param backend.resources.limits.memory Maximum memory the backend container can use.
       memory: 256Mi
-      ## @param backend.resources.limits.cpu CPU limit.
+      ## @param backend.resources.limits.cpu Maximum CPU the backend container can use.
       cpu: 200m
+  ## @extra backend.readinessProbe HTTP readiness probe to determine when the backend is ready to serve traffic.
   readinessProbe:
-    ## @param backend.readinessProbe.path Readiness endpoint path.
+    ## @param backend.readinessProbe.path HTTP path used by the readiness probe.
     path: /api/notes
-    ## @param backend.readinessProbe.initialDelaySeconds Initial delay before readiness checks.
+    ## @param backend.readinessProbe.initialDelaySeconds Seconds to wait before the first readiness check.
     initialDelaySeconds: 30
-    ## @param backend.readinessProbe.periodSeconds Readiness check interval.
+    ## @param backend.readinessProbe.periodSeconds Interval in seconds between readiness checks.
     periodSeconds: 10
-    ## @param backend.readinessProbe.timeoutSeconds Readiness check timeout.
+    ## @param backend.readinessProbe.timeoutSeconds Seconds before a readiness check times out.
     timeoutSeconds: 10
+  ## @extra backend.livenessProbe HTTP liveness probe to restart the backend container if it becomes unresponsive.
   livenessProbe:
-    ## @param backend.livenessProbe.path Liveness endpoint path.
+    ## @param backend.livenessProbe.path HTTP path used by the liveness probe.
     path: /api/notes
-    ## @param backend.livenessProbe.initialDelaySeconds Initial delay before liveness checks.
+    ## @param backend.livenessProbe.initialDelaySeconds Seconds to wait before the first liveness check.
     initialDelaySeconds: 120
-    ## @param backend.livenessProbe.periodSeconds Liveness check interval.
+    ## @param backend.livenessProbe.periodSeconds Interval in seconds between liveness checks.
     periodSeconds: 60
-    ## @param backend.livenessProbe.timeoutSeconds Liveness check timeout.
+    ## @param backend.livenessProbe.timeoutSeconds Seconds before a liveness check times out.
     timeoutSeconds: 30
+  ## @skip backend.nodeSelector
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
 
 ## @section Frontend parameters
+
 frontend:
-  ## @param frontend.enabled Enable frontend deployment.
+  ## @param frontend.enabled Enable or disable the frontend Deployment and Service.
   enabled: true
-  ## @param frontend.name Frontend component name.
+  ## @param frontend.name Name used for the frontend Deployment, Service, and labels.
   name: frontend
-  ## @param frontend.replicaCount Number of frontend replicas.
+  ## @param frontend.replicaCount Number of frontend pod replicas to run.
   replicaCount: 1
+  ## @extra frontend.image Frontend container image configuration.
   image:
-    ## @param frontend.image.repository Image repository.
+    ## @param frontend.image.repository Docker image repository for the frontend.
     repository: chenarrr/devops
-    ## @param frontend.image.tag Image tag.
+    ## @param frontend.image.tag Docker image tag for the frontend.
     tag: frontend-a725016
-    ## @param frontend.image.pullPolicy Image pull policy.
+    ## @param frontend.image.pullPolicy Image pull policy (Always, IfNotPresent, Never).
     pullPolicy: Always
-  ## @param frontend.containerPort Frontend container port.
+  ## @param frontend.containerPort Port the frontend container (NGINX) listens on.
   containerPort: 80
+  ## @extra frontend.service Frontend Kubernetes Service configuration.
   service:
-    ## @param frontend.service.type Service type.
+    ## @param frontend.service.type Kubernetes Service type (ClusterIP, NodePort, LoadBalancer).
     type: ClusterIP
-    ## @param frontend.service.port Service port.
+    ## @param frontend.service.port Port exposed by the frontend Service.
     port: 80
+  ## @extra frontend.resources CPU and memory resource requests and limits for the frontend container.
   resources:
+    ## @extra frontend.resources.requests Minimum resources guaranteed to the frontend container.
     requests:
-      ## @param frontend.resources.requests.memory Requested memory.
+      ## @param frontend.resources.requests.memory Minimum memory allocated to the frontend container.
       memory: 64Mi
-      ## @param frontend.resources.requests.cpu Requested CPU.
+      ## @param frontend.resources.requests.cpu Minimum CPU allocated to the frontend container.
       cpu: 50m
+    ## @extra frontend.resources.limits Maximum resources the frontend container is allowed to consume.
     limits:
-      ## @param frontend.resources.limits.memory Memory limit.
+      ## @param frontend.resources.limits.memory Maximum memory the frontend container can use.
       memory: 128Mi
-      ## @param frontend.resources.limits.cpu CPU limit.
+      ## @param frontend.resources.limits.cpu Maximum CPU the frontend container can use.
       cpu: 100m
+  ## @extra frontend.securityContext Security context applied at the container level.
   securityContext:
-    ## @param frontend.securityContext.allowPrivilegeEscalation Allow privilege escalation.
+    ## @param frontend.securityContext.allowPrivilegeEscalation Prevent the process from gaining extra privileges.
     allowPrivilegeEscalation: false
+  ## @extra frontend.readinessProbe HTTP readiness probe to determine when the frontend is ready to serve traffic.
   readinessProbe:
-    ## @param frontend.readinessProbe.path Readiness endpoint path.
+    ## @param frontend.readinessProbe.path HTTP path used by the readiness probe.
     path: /
-    ## @param frontend.readinessProbe.initialDelaySeconds Initial delay before readiness checks.
+    ## @param frontend.readinessProbe.initialDelaySeconds Seconds to wait before the first readiness check.
     initialDelaySeconds: 5
-    ## @param frontend.readinessProbe.periodSeconds Readiness check interval.
+    ## @param frontend.readinessProbe.periodSeconds Interval in seconds between readiness checks.
     periodSeconds: 10
-    ## @param frontend.readinessProbe.timeoutSeconds Readiness check timeout.
+    ## @param frontend.readinessProbe.timeoutSeconds Seconds before a readiness check times out.
     timeoutSeconds: 3
+  ## @extra frontend.livenessProbe HTTP liveness probe to restart the frontend container if it becomes unresponsive.
   livenessProbe:
-    ## @param frontend.livenessProbe.path Liveness endpoint path.
+    ## @param frontend.livenessProbe.path HTTP path used by the liveness probe.
     path: /
-    ## @param frontend.livenessProbe.initialDelaySeconds Initial delay before liveness checks.
+    ## @param frontend.livenessProbe.initialDelaySeconds Seconds to wait before the first liveness check.
     initialDelaySeconds: 30
-    ## @param frontend.livenessProbe.periodSeconds Liveness check interval.
+    ## @param frontend.livenessProbe.periodSeconds Interval in seconds between liveness checks.
     periodSeconds: 60
-    ## @param frontend.livenessProbe.timeoutSeconds Liveness check timeout.
+    ## @param frontend.livenessProbe.timeoutSeconds Seconds before a liveness check times out.
     timeoutSeconds: 10
+  ## @skip frontend.nodeSelector
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
 
 ## @section MongoDB parameters
+
 mongodb:
-  ## @param mongodb.enabled Enable MongoDB StatefulSet.
+  ## @param mongodb.enabled Enable or disable the MongoDB StatefulSet and its supporting resources.
   enabled: true
-  ## @param mongodb.name MongoDB component name.
+  ## @param mongodb.name Name used for the MongoDB StatefulSet and labels.
   name: mongodb
-  ## @param mongodb.serviceName Headless service name for StatefulSet DNS.
+  ## @param mongodb.serviceName Name of the headless Service used for StatefulSet DNS-based discovery.
   serviceName: mongodb-service
-  ## @param mongodb.replicaCount Number of MongoDB replicas.
+  ## @param mongodb.replicaCount Number of MongoDB pod replicas (keep at 1 unless using a replica set).
   replicaCount: 1
+  ## @extra mongodb.image MongoDB container image configuration.
   image:
-    ## @param mongodb.image.repository Image repository.
+    ## @param mongodb.image.repository Docker image repository for MongoDB.
     repository: mongo
-    ## @param mongodb.image.tag Image tag.
+    ## @param mongodb.image.tag Docker image tag for MongoDB.
     tag: "8"
-  ## @param mongodb.containerPort MongoDB container port.
+  ## @param mongodb.containerPort Port the MongoDB container listens on.
   containerPort: 27017
+  ## @extra mongodb.storage Persistent storage configuration for the MongoDB data directory.
   storage:
-    ## @param mongodb.storage.storageClassName Storage class name.
+    ## @param mongodb.storage.storageClassName StorageClass used by the PersistentVolumeClaim.
     storageClassName: manual
-    ## @param mongodb.storage.size Volume size.
+    ## @param mongodb.storage.size Size of the PersistentVolume requested for MongoDB data.
     size: 5Gi
-    ## @param mongodb.storage.hostPath Host path for local storage.
+    ## @param mongodb.storage.hostPath Absolute path on the host node where MongoDB data is stored.
     hostPath: /mnt/data/mongodb
+  ## @extra mongodb.resources CPU and memory resource requests and limits for the MongoDB container.
   resources:
+    ## @extra mongodb.resources.requests Minimum resources guaranteed to the MongoDB container.
     requests:
-      ## @param mongodb.resources.requests.memory Requested memory.
+      ## @param mongodb.resources.requests.memory Minimum memory allocated to the MongoDB container.
       memory: 256Mi
-      ## @param mongodb.resources.requests.cpu Requested CPU.
+      ## @param mongodb.resources.requests.cpu Minimum CPU allocated to the MongoDB container.
       cpu: 50m
+    ## @extra mongodb.resources.limits Maximum resources the MongoDB container is allowed to consume.
     limits:
-      ## @param mongodb.resources.limits.memory Memory limit.
+      ## @param mongodb.resources.limits.memory Maximum memory the MongoDB container can use.
       memory: 512Mi
-      ## @param mongodb.resources.limits.cpu CPU limit.
+      ## @param mongodb.resources.limits.cpu Maximum CPU the MongoDB container can use.
       cpu: 200m
+  ## @extra mongodb.readinessProbe Exec readiness probe to check if MongoDB is accepting connections.
   readinessProbe:
-    ## @param mongodb.readinessProbe.initialDelaySeconds Initial delay before readiness checks.
+    ## @param mongodb.readinessProbe.initialDelaySeconds Seconds to wait before the first readiness check.
     initialDelaySeconds: 30
-    ## @param mongodb.readinessProbe.periodSeconds Readiness check interval.
+    ## @param mongodb.readinessProbe.periodSeconds Interval in seconds between readiness checks.
     periodSeconds: 10
-    ## @param mongodb.readinessProbe.timeoutSeconds Readiness check timeout.
+    ## @param mongodb.readinessProbe.timeoutSeconds Seconds before a readiness check times out.
     timeoutSeconds: 10
+  ## @extra mongodb.livenessProbe Exec liveness probe to restart MongoDB if it becomes unresponsive.
   livenessProbe:
-    ## @param mongodb.livenessProbe.initialDelaySeconds Initial delay before liveness checks.
+    ## @param mongodb.livenessProbe.initialDelaySeconds Seconds to wait before the first liveness check.
     initialDelaySeconds: 120
-    ## @param mongodb.livenessProbe.periodSeconds Liveness check interval.
+    ## @param mongodb.livenessProbe.periodSeconds Interval in seconds between liveness checks.
     periodSeconds: 60
-    ## @param mongodb.livenessProbe.timeoutSeconds Liveness check timeout.
+    ## @param mongodb.livenessProbe.timeoutSeconds Seconds before a liveness check times out.
     timeoutSeconds: 30
+  ## @skip mongodb.nodeSelector
+  nodeSelector:
+    node-role.kubernetes.io/worker: ""
 
 ## @section Ingress parameters
+
 ingress:
-  ## @param ingress.enabled Enable Ingress resource.
+  ## @param ingress.enabled Enable or disable the Ingress resource.
   enabled: true
-  ## @param ingress.name Ingress resource name.
+  ## @param ingress.name Name of the Ingress resource.
   name: notes-app-ingress
+  ## @extra ingress.annotations Annotations applied to the Ingress resource.
   annotations:
-    ## @param ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size Set max body size for NGINX ingress.
+    ## @param ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size Maximum allowed request body size for the NGINX ingress controller.
     nginx.ingress.kubernetes.io/proxy-body-size: 10m
-  ## @param ingress.className Ingress class name.
+  ## @param ingress.className Ingress class name that selects the ingress controller to use.
   className: nginx
-  ## @param ingress.path Ingress path.
+  ## @param ingress.path URL path prefix that the Ingress routes to the frontend Service.
   path: /
-  ## @param ingress.pathType Ingress path type.
+  ## @param ingress.pathType Ingress path matching type (Prefix, Exact, ImplementationSpecific).
   pathType: Prefix

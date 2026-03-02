@@ -61,6 +61,10 @@ spec:
       labels:
         {{- include "notes-app.mongodb.labels" . | nindent 8 }}
     spec:
+      {{- if .Values.mongodb.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.mongodb.nodeSelector | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Values.mongodb.name }}
           image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"

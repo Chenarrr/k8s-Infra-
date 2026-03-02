@@ -2,28 +2,32 @@
 
 A production-grade Kubernetes deployment pipeline with security scanning, GitOps automation, and infrastructure-as-code. Code pushed to the [DevSecOps](https://github.com/Chenarrr/DevSecOps) repo triggers a fully automated pipeline: lint, build, scan, deploy — zero manual intervention.
 
-> **📅 Documentation Status:** Updated February 17, 2026 - All configurations and values match current codebase
+> **📅 Documentation Status:** Updated March 2, 2026 - All configurations and values match current codebase
 >
 > **🔥 Latest Features:**
 > - ✅ 19 automated Helm chart tests covering all components
-> - ✅ GitHub Actions CI/CD pipeline with quality gates  
+> - ✅ GitHub Actions CI/CD pipeline with quality gates
 > - ✅ Auto-generated documentation with Bitnami readme-generator-for-helm
 > - ✅ Production-ready chart repository
+> - ✅ All app pods pinned to worker-1 via nodeSelector
+> - ✅ Migrated CNI from Flannel to Cilium
 
 ---
 
 ## ✅ Project Status & Verification  
 
-**Current Working Configuration (Verified February 17, 2026):**
+**Current Working Configuration (Verified March 2, 2026):**
 
 | Component | Status | Current Version |
 |-----------|---------|-----------------|
-| **Backend Image** | ✅ Active | `chenarrr/devops:backend-8193810` |
-| **Frontend Image** | ✅ Active | `chenarrr/devops:frontend-8193810` | 
+| **Backend Image** | ✅ Active | `chenarrr/devops:backend-a725016` |
+| **Frontend Image** | ✅ Active | `chenarrr/devops:frontend-a725016` |
 | **MongoDB** | ✅ Active | `mongo:8` |
 | **Helm Chart** | ✅ Tested | `v0.1.0` with 19 passing tests |
 | **CI/CD Pipeline** | ✅ Active | GitHub Actions + helm-test.yaml |
 | **Documentation** | ✅ Current | Auto-generated with Bitnami readme-generator-for-helm |
+| **CNI** | ✅ Active | Cilium (migrated from Flannel) |
+| **Node Scheduling** | ✅ Active | All pods pinned to worker-1 via nodeSelector |
 
 **Verified Components:**
 - ✅ All template files exist: `_helpers.tpl`, `backend.yaml`, `frontend.yaml`, `mongodb.yaml`, `ingress.yaml` 
