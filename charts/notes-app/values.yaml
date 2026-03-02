@@ -157,7 +157,7 @@ mongodb:
       ## @param mongodb.resources.requests.memory Requested memory.
       memory: 256Mi
       ## @param mongodb.resources.requests.cpu Requested CPU.
-      cpu: 100m
+      cpu: 50m
     limits:
       ## @param mongodb.resources.limits.memory Memory limit.
       memory: 512Mi
