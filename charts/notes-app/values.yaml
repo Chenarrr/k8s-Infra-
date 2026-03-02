@@ -45,9 +45,9 @@ backend:
   resources:
     requests:
       ## @param backend.resources.requests.memory Requested memory.
-      memory: 128Mi
+      memory: 64Mi
       ## @param backend.resources.requests.cpu Requested CPU.
-      cpu: 100m
+      cpu: 10m
     ## @extra backend.resources.limits Backend resource limits.
     limits:
       ## @param backend.resources.limits.memory Memory limit.
