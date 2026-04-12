@@ -1,27 +1,98 @@
-suite: test mongodb statefulset
+suite: MongoDB StatefulSet
 templates:
   - mongodb.yaml
 tests:
-  - it: should create a StatefulSet
+  # ── Rendering & Kind ──────────────────────────────────────────────
+  - it: should render a StatefulSet when enabled
     asserts:
       - isKind:
           of: StatefulSet
         documentIndex: 3
+      - isAPIVersion:
+          of: apps/v1
+        documentIndex: 3
 
-  - it: should have correct name
+  - it: should not render anything when mongodb is disabled
+    set:
+      mongodb.enabled: false
     asserts:
-      - matchRegex:
+      - hasDocuments:
+          count: 0
+
+  - it: should render 4 documents (PV, PVC, Service, StatefulSet)
+    asserts:
+      - hasDocuments:
+          count: 4
+
+  # ── Metadata ──────────────────────────────────────────────────────
+  - it: should have correct StatefulSet name
+    asserts:
+      - equal:
           path: metadata.name
-          pattern: mongodb$
+          value: mongodb
         documentIndex: 3
 
-  - it: should have service name set
+  - it: should include standard Helm labels on StatefulSet
     asserts:
-      - isNotEmpty:
-          path: spec.serviceName
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+        documentIndex: 3
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: database
+        documentIndex: 3
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: mongodb
         documentIndex: 3
 
-  - it: should have MongoDB port
+  # ── ServiceName ───────────────────────────────────────────────────
+  - it: should reference the headless service by name
+    asserts:
+      - equal:
+          path: spec.serviceName
+          value: mongodb-service
+        documentIndex: 3
+
+  # ── Replicas ──────────────────────────────────────────────────────
+  - it: should default to 1 replica
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+        documentIndex: 3
+
+  # ── Selector / Pod labels match ───────────────────────────────────
+  - it: should have matching selector and pod labels
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: mongodb
+        documentIndex: 3
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: mongodb
+        documentIndex: 3
+
+  # ── Container Image ───────────────────────────────────────────────
+  - it: should use the correct MongoDB image
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "mongo:8"
+        documentIndex: 3
+
+  - it: should allow overriding image tag
+    set:
+      mongodb.image.tag: "7"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "mongo:7"
+        documentIndex: 3
+
+  # ── Container Port ────────────────────────────────────────────────
+  - it: should expose MongoDB port 27017 with name
     asserts:
       - contains:
           path: spec.template.spec.containers[0].ports
@@ -30,8 +101,101 @@ tests:
             name: mongodb
         documentIndex: 3
 
-  - it: should have resource limits
+  # ── Volume Mount ──────────────────────────────────────────────────
+  - it: should mount data volume at /data/db
     asserts:
-      - isNotEmpty:
-          path: spec.template.spec.containers[0].resources.limits
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: mongodb-storage
+            mountPath: /data/db
+        documentIndex: 3
+
+  - it: should reference the PVC in volumes
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: mongodb-storage
+            persistentVolumeClaim:
+              claimName: mongodb-pvc
+        documentIndex: 3
+
+  # ── Readiness Probe ───────────────────────────────────────────────
+  - it: should configure exec readiness probe with mongosh
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].readinessProbe.exec.command
+          content: mongosh
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.initialDelaySeconds
+          value: 30
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.periodSeconds
+          value: 10
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.timeoutSeconds
+          value: 10
+        documentIndex: 3
+
+  # ── Liveness Probe ────────────────────────────────────────────────
+  - it: should configure exec liveness probe with mongosh
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].livenessProbe.exec.command
+          content: mongosh
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.initialDelaySeconds
+          value: 120
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.periodSeconds
+          value: 60
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.timeoutSeconds
+          value: 30
+        documentIndex: 3
+
+  # ── Resource Requests & Limits ────────────────────────────────────
+  - it: should set resource requests
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 256Mi
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 50m
+        documentIndex: 3
+
+  - it: should set resource limits
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 512Mi
+        documentIndex: 3
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 200m
+        documentIndex: 3
+
+  # ── Node Selector ─────────────────────────────────────────────────
+  - it: should set nodeSelector for worker nodes
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector["node-role.kubernetes.io/worker"]
+          value: ""
+        documentIndex: 3
+
+  - it: should omit nodeSelector when set to null
+    set:
+      mongodb.nodeSelector: null
+    asserts:
+      - notExists:
+          path: spec.template.spec.nodeSelector
         documentIndex: 3

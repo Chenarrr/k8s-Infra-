@@ -1,0 +1,148 @@
+suite: MongoDB Storage (PV & PVC)
+templates:
+  - mongodb.yaml
+tests:
+  # ═══════════════════════════════════════════════════════════════════
+  # PersistentVolume
+  # ═══════════════════════════════════════════════════════════════════
+  - it: should render a PersistentVolume
+    asserts:
+      - isKind:
+          of: PersistentVolume
+        documentIndex: 0
+      - isAPIVersion:
+          of: v1
+        documentIndex: 0
+
+  - it: PV should have correct name
+    asserts:
+      - equal:
+          path: metadata.name
+          value: mongodb-pv
+        documentIndex: 0
+
+  - it: PV should include standard labels
+    asserts:
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+        documentIndex: 0
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: database
+        documentIndex: 0
+
+  - it: PV should use correct storageClassName
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: manual
+        documentIndex: 0
+
+  - it: PV should have correct capacity
+    asserts:
+      - equal:
+          path: spec.capacity.storage
+          value: 5Gi
+        documentIndex: 0
+
+  - it: PV should use ReadWriteOnce access mode
+    asserts:
+      - contains:
+          path: spec.accessModes
+          content: ReadWriteOnce
+        documentIndex: 0
+
+  - it: PV should use correct hostPath
+    asserts:
+      - equal:
+          path: spec.hostPath.path
+          value: /mnt/data/mongodb
+        documentIndex: 0
+      - equal:
+          path: spec.hostPath.type
+          value: DirectoryOrCreate
+        documentIndex: 0
+
+  - it: PV should allow overriding storage size
+    set:
+      mongodb.storage.size: 10Gi
+    asserts:
+      - equal:
+          path: spec.capacity.storage
+          value: 10Gi
+        documentIndex: 0
+
+  - it: PV should allow overriding hostPath
+    set:
+      mongodb.storage.hostPath: /data/custom/mongo
+    asserts:
+      - equal:
+          path: spec.hostPath.path
+          value: /data/custom/mongo
+        documentIndex: 0
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PersistentVolumeClaim
+  # ═══════════════════════════════════════════════════════════════════
+  - it: should render a PersistentVolumeClaim
+    asserts:
+      - isKind:
+          of: PersistentVolumeClaim
+        documentIndex: 1
+      - isAPIVersion:
+          of: v1
+        documentIndex: 1
+
+  - it: PVC should have correct name
+    asserts:
+      - equal:
+          path: metadata.name
+          value: mongodb-pvc
+        documentIndex: 1
+
+  - it: PVC should include standard labels
+    asserts:
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+        documentIndex: 1
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: database
+        documentIndex: 1
+
+  - it: PVC should use same storageClassName as PV
+    asserts:
+      - equal:
+          path: spec.storageClassName
+          value: manual
+        documentIndex: 1
+
+  - it: PVC should request correct storage size
+    asserts:
+      - equal:
+          path: spec.resources.requests.storage
+          value: 5Gi
+        documentIndex: 1
+
+  - it: PVC should use ReadWriteOnce access mode
+    asserts:
+      - contains:
+          path: spec.accessModes
+          content: ReadWriteOnce
+        documentIndex: 1
+
+  - it: PVC storage size should match PV when overridden
+    set:
+      mongodb.storage.size: 10Gi
+    asserts:
+      - equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+        documentIndex: 1
+
+  - it: should not render PV or PVC when mongodb is disabled
+    set:
+      mongodb.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

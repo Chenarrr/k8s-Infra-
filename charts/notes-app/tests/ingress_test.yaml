@@ -1,0 +1,90 @@
+suite: Ingress
+templates:
+  - ingress.yaml
+tests:
+  # ── Rendering & Kind ──────────────────────────────────────────────
+  - it: should render an Ingress when enabled
+    asserts:
+      - isKind:
+          of: Ingress
+      - isAPIVersion:
+          of: networking.k8s.io/v1
+
+  - it: should not render anything when ingress is disabled
+    set:
+      ingress.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # ── Metadata ──────────────────────────────────────────────────────
+  - it: should have correct name
+    asserts:
+      - equal:
+          path: metadata.name
+          value: notes-app-ingress
+
+  - it: should include standard Helm labels
+    asserts:
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+      - exists:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+
+  # ── Annotations ───────────────────────────────────────────────────
+  - it: should set nginx proxy-body-size annotation
+    asserts:
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/proxy-body-size"]
+          value: 10m
+
+  # ── Ingress Class ─────────────────────────────────────────────────
+  - it: should use nginx ingress class
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+
+  - it: should allow overriding ingress class
+    set:
+      ingress.className: traefik
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: traefik
+
+  # ── Routing Rules ─────────────────────────────────────────────────
+  - it: should route root path to frontend service
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: Prefix
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: frontend
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 80
+
+  - it: should route to correct port when frontend service port is overridden
+    set:
+      frontend.service.port: 8080
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 8080
+
+  - it: should allow overriding ingress path
+    set:
+      ingress.path: /app
+      ingress.pathType: Exact
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /app
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: Exact

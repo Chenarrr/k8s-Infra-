@@ -1,34 +1,222 @@
-suite: test frontend deployment
+suite: Frontend Deployment
 templates:
   - frontend.yaml
 tests:
-  - it: should create a Deployment
+  # ── Rendering & Kind ──────────────────────────────────────────────
+  - it: should render a Deployment when enabled
     asserts:
       - isKind:
           of: Deployment
         documentIndex: 0
+      - isAPIVersion:
+          of: apps/v1
+        documentIndex: 0
 
-  - it: should have correct name
+  - it: should not render anything when frontend is disabled
+    set:
+      frontend.enabled: false
     asserts:
-      - matchRegex:
+      - hasDocuments:
+          count: 0
+
+  # ── Metadata ──────────────────────────────────────────────────────
+  - it: should have correct deployment name
+    asserts:
+      - equal:
           path: metadata.name
-          pattern: frontend$
+          value: frontend
         documentIndex: 0
 
-  - it: should have liveness probe
+  - it: should include standard Helm labels
     asserts:
-      - isNotEmpty:
-          path: spec.template.spec.containers[0].livenessProbe
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+        documentIndex: 0
+      - exists:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+        documentIndex: 0
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: web
+        documentIndex: 0
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: frontend
         documentIndex: 0
 
-  - it: should have readiness probe
+  # ── Replicas ──────────────────────────────────────────────────────
+  - it: should default to 1 replica
     asserts:
-      - isNotEmpty:
-          path: spec.template.spec.containers[0].readinessProbe
+      - equal:
+          path: spec.replicas
+          value: 1
         documentIndex: 0
 
-  - it: should have resource limits
+  - it: should allow overriding replica count
+    set:
+      frontend.replicaCount: 3
     asserts:
-      - isNotEmpty:
-          path: spec.template.spec.containers[0].resources.limits
+      - equal:
+          path: spec.replicas
+          value: 3
+        documentIndex: 0
+
+  # ── Selector / Pod labels match ───────────────────────────────────
+  - it: should have matching selector and pod labels
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: frontend
+        documentIndex: 0
+      - equal:
+          path: spec.template.metadata.labels["app.kubernetes.io/name"]
+          value: frontend
+        documentIndex: 0
+
+  # ── Container Image ───────────────────────────────────────────────
+  - it: should use the correct image and pull policy
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "chenarrr/devops:frontend-a725016"
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: Always
+        documentIndex: 0
+
+  - it: should allow overriding image tag
+    set:
+      frontend.image.tag: v2.0.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "chenarrr/devops:v2.0.0"
+        documentIndex: 0
+
+  # ── Container Port ────────────────────────────────────────────────
+  - it: should expose port 80
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 80
+        documentIndex: 0
+
+  # ── Readiness Probe ───────────────────────────────────────────────
+  - it: should configure readiness probe correctly
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.port
+          value: 80
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.initialDelaySeconds
+          value: 5
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.periodSeconds
+          value: 10
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.timeoutSeconds
+          value: 3
+        documentIndex: 0
+
+  # ── Liveness Probe ────────────────────────────────────────────────
+  - it: should configure liveness probe correctly
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 80
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.initialDelaySeconds
+          value: 30
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.periodSeconds
+          value: 60
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.timeoutSeconds
+          value: 10
+        documentIndex: 0
+
+  # ── Container Security Context ────────────────────────────────────
+  - it: should disallow privilege escalation
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+        documentIndex: 0
+
+  # ── Resource Requests & Limits ────────────────────────────────────
+  - it: should set resource requests
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: 64Mi
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: 50m
+        documentIndex: 0
+
+  - it: should set resource limits
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 128Mi
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 100m
+        documentIndex: 0
+
+  - it: should allow overriding resource limits
+    set:
+      frontend.resources.limits.memory: 256Mi
+      frontend.resources.limits.cpu: 200m
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 256Mi
+        documentIndex: 0
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 200m
+        documentIndex: 0
+
+  # ── Node Selector ─────────────────────────────────────────────────
+  - it: should set nodeSelector for worker nodes
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector["node-role.kubernetes.io/worker"]
+          value: ""
+        documentIndex: 0
+
+  - it: should allow overriding nodeSelector
+    set:
+      frontend.nodeSelector:
+        disktype: ssd
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.disktype
+          value: ssd
+        documentIndex: 0
+
+  - it: should omit nodeSelector when set to null
+    set:
+      frontend.nodeSelector: null
+    asserts:
+      - notExists:
+          path: spec.template.spec.nodeSelector
         documentIndex: 0

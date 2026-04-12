@@ -1,50 +1,203 @@
-suite: test services
+suite: Services
 templates:
   - backend.yaml
   - frontend.yaml
   - mongodb.yaml
 tests:
-  - it: backend service should be ClusterIP
+  # ═══════════════════════════════════════════════════════════════════
+  # Backend Service
+  # ═══════════════════════════════════════════════════════════════════
+  - it: backend service should be a Service of type ClusterIP
     template: backend.yaml
     asserts:
       - isKind:
           of: Service
         documentIndex: 1
+      - isAPIVersion:
+          of: v1
+        documentIndex: 1
       - equal:
           path: spec.type
           value: ClusterIP
         documentIndex: 1
+
+  - it: backend service should have correct name
+    template: backend.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: backend
+        documentIndex: 1
+
+  - it: backend service should include standard labels
+    template: backend.yaml
+    asserts:
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+        documentIndex: 1
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: api
+        documentIndex: 1
+
+  - it: backend service should expose port 5000 targeting container port
+    template: backend.yaml
+    asserts:
       - equal:
           path: spec.ports[0].port
           value: 5000
         documentIndex: 1
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 5000
+        documentIndex: 1
 
-  - it: frontend service should be ClusterIP
+  - it: backend service selector should match pod labels
+    template: backend.yaml
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: backend
+        documentIndex: 1
+
+  - it: backend service should not render when disabled
+    template: backend.yaml
+    set:
+      backend.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Frontend Service
+  # ═══════════════════════════════════════════════════════════════════
+  - it: frontend service should be a Service of type ClusterIP
     template: frontend.yaml
     asserts:
       - isKind:
           of: Service
         documentIndex: 1
+      - isAPIVersion:
+          of: v1
+        documentIndex: 1
       - equal:
           path: spec.type
           value: ClusterIP
         documentIndex: 1
+
+  - it: frontend service should have correct name
+    template: frontend.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: frontend
+        documentIndex: 1
+
+  - it: frontend service should include standard labels
+    template: frontend.yaml
+    asserts:
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+        documentIndex: 1
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: web
+        documentIndex: 1
+
+  - it: frontend service should expose port 80 targeting container port
+    template: frontend.yaml
+    asserts:
       - equal:
           path: spec.ports[0].port
           value: 80
         documentIndex: 1
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 80
+        documentIndex: 1
 
-  - it: mongodb service should be headless
+  - it: frontend service selector should match pod labels
+    template: frontend.yaml
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: frontend
+        documentIndex: 1
+
+  - it: frontend service should not render when disabled
+    template: frontend.yaml
+    set:
+      frontend.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # ═══════════════════════════════════════════════════════════════════
+  # MongoDB Headless Service
+  # ═══════════════════════════════════════════════════════════════════
+  - it: mongodb service should be headless (clusterIP None)
     template: mongodb.yaml
     asserts:
       - isKind:
           of: Service
         documentIndex: 2
+      - isAPIVersion:
+          of: v1
+        documentIndex: 2
       - equal:
           path: spec.clusterIP
           value: None
         documentIndex: 2
+
+  - it: mongodb service should have correct name
+    template: mongodb.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: mongodb-service
+        documentIndex: 2
+
+  - it: mongodb service should include standard labels
+    template: mongodb.yaml
+    asserts:
+      - exists:
+          path: metadata.labels["helm.sh/chart"]
+        documentIndex: 2
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: database
+        documentIndex: 2
+
+  - it: mongodb service should expose port 27017 with name
+    template: mongodb.yaml
+    asserts:
       - equal:
           path: spec.ports[0].port
           value: 27017
+        documentIndex: 2
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 27017
+        documentIndex: 2
+      - equal:
+          path: spec.ports[0].name
+          value: mongodb
+        documentIndex: 2
+
+  - it: mongodb service selector should match pod labels
+    template: mongodb.yaml
+    asserts:
+      - equal:
+          path: spec.selector["app.kubernetes.io/name"]
+          value: mongodb
+        documentIndex: 2
+
+  - it: mongodb service should allow overriding service name
+    template: mongodb.yaml
+    set:
+      mongodb.serviceName: custom-mongo-svc
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-mongo-svc
         documentIndex: 2
