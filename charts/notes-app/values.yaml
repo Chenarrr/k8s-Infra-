@@ -7,7 +7,7 @@ fullnameOverride: notes-app
 
 backend:
   ## @param backend.enabled Enable or disable the backend Deployment and Service.
-  enabled: true
+  enabled: false
   ## @param backend.name Name used for the backend Deployment, Service, and labels.
   name: backend
   ## @param backend.replicaCount Number of backend pod replicas to run.
