@@ -16,7 +16,7 @@ Full stack notes app chart managed by Flux
 
 | Name                                               | Description                                                                      | Value                                                 |
 | -------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `backend.enabled`                                  | Enable or disable the backend Deployment and Service.                            | `true`                                                |
+| `backend.enabled`                                  | Enable or disable the backend Deployment and Service and 5 or 0 ?.               | `true`                                                |
 | `backend.name`                                     | Name used for the backend Deployment, Service, and labels.                       | `backend`                                             |
 | `backend.replicaCount`                             | Number of backend pod replicas to run.                                           | `1`                                                   |
 | `backend.image`                                    | Backend container image configuration.                                           |                                                       |
