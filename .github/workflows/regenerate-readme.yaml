@@ -1,0 +1,61 @@
+name: Auto-regenerate README
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "charts/**"
+
+concurrency:
+  group: regenerate-readme
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 20
+
+      - name: Circuit breaker detect loop
+        run: |
+          set -e
+          count=0
+          for i in $(seq 0 10); do
+            author=$(git log -1 --format='%an' "HEAD~$i" 2>/dev/null || echo "")
+            case "$author" in
+              *github-actions*)
+                count=$((count+1)) ;;
+              *)
+                break ;;
+            esac
+          done
+          echo "Consecutive github-actions[bot] commits at HEAD: $count"
+          if [ "$count" -ge 5 ]; then
+            echo "::error::LOOP DETECTED $count consecutive bot commits. Hard-fail to stop runaway."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install readme-generator-for-helm
+        run: npm install -g @bitnami/readme-generator-for-helm
+
+      - name: Regenerate README
+        run: make docs
+
+      - name: Commit updated README
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: auto-regenerate README [skip ci]"
+          file_pattern: README.md

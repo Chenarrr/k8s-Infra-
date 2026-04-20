@@ -6,7 +6,7 @@ fullnameOverride: notes-app
 ## @section Backend parameters
 
 backend:
-  ## @param backend.enabled Enable or disable the backend Deployment and Service.
+  ## @param backend.enabled Enable or disable the backend Deployment and Service and 5 or 0 ?.
   enabled: true
   ## @param backend.name Name used for the backend Deployment, Service, and labels.
   name: backend
